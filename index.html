@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>勤怠管理システム</title>
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/history.css">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#ffffff">
     <!-- Firebase SDKs -->
@@ -28,6 +29,11 @@
             <div id="employee-list" class="list-group">
                 <!-- 従業員ボタンがここに注入されます -->
                 <p class="loading-text">読み込み中...</p>
+            </div>
+
+            <div class="history-section">
+                <h3>本日の打刻状況 (全体)</h3>
+                <ul id="today-history-list-all" class="history-list"></ul>
             </div>
             <!-- Admin button removed for URL-based access -->
         </section>
@@ -70,6 +76,11 @@
             <div class="timestamp-actions">
                 <button id="btn-clock-in" class="btn-large btn-clock-in">出勤</button>
                 <button id="btn-clock-out" class="btn-large btn-clock-out">退勤</button>
+            </div>
+
+            <div class="history-section">
+                <h3>本日の打刻履歴</h3>
+                <ul id="today-history-list-personal" class="history-list"></ul>
             </div>
             <div class="navigation-links">
                 <button id="btn-go-application" class="btn-secondary">勤怠申請へ</button>

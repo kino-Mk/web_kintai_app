@@ -70,3 +70,103 @@ document.getElementById('btn-submit-application').addEventListener('click', () =
             });
     }
 });
+
+
+// --- 履歴表示機能 ---
+
+// 今日の開始時刻を取得 (00:00:00)
+function getStartOfToday() {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    return now;
+}
+
+// 画面表示時のフック
+function onScreenChanged(screenId) {
+    if (screenId === 'selection') {
+        loadTodayHistoryAll();
+    } else if (screenId === 'timeStamp' && currentEmployee) {
+        loadTodayHistoryPersonal(currentEmployee.id);
+    }
+}
+
+// 1. 全体の本日の打刻履歴 (選択画面用)
+function loadTodayHistoryAll() {
+    const list = document.getElementById('today-history-list-all');
+    list.innerHTML = '<li class="loading-text">読み込み中...</li>';
+
+    const start = getStartOfToday();
+
+    db.collection("attendance")
+        .where("timestamp", ">=", start)
+        .orderBy("timestamp", "desc")
+        .limit(20) // 最新20件
+        .onSnapshot((snapshot) => {
+            list.innerHTML = "";
+            if (snapshot.empty) {
+                list.innerHTML = "<li>本日の打刻はありません</li>";
+                return;
+            }
+
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                renderHistoryItem(list, data, true); // true = show name
+            });
+        }, (error) => {
+            console.error("Error loading all history:", error);
+            list.innerHTML = "<li>読み込みエラー</li>";
+        });
+}
+
+// 2. 個人の本日の打刻履歴 (打刻画面用)
+function loadTodayHistoryPersonal(empId) {
+    const list = document.getElementById('today-history-list-personal');
+    list.innerHTML = '<li class="loading-text">読み込み中...</li>';
+
+    const start = getStartOfToday();
+
+    db.collection("attendance")
+        .where("empId", "==", empId)
+        .where("timestamp", ">=", start)
+        .orderBy("timestamp", "desc")
+        .onSnapshot((snapshot) => {
+            list.innerHTML = "";
+            if (snapshot.empty) {
+                list.innerHTML = "<li>本日の打刻はありません</li>";
+                return;
+            }
+
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                renderHistoryItem(list, data, false); // false = hide name (already known)
+            });
+        }, (error) => {
+            console.error("Error loading personal history:", error);
+            list.innerHTML = "<li>読み込みエラー: インデックスが必要な可能性があります</li>";
+            // 複合クエリ (empId + timestamp range) はFirestoreでインデックスが必要になる場合があります
+            // コンソールにリンクが表示されるので作成してください
+        });
+}
+
+function renderHistoryItem(container, data, showName) {
+    const li = document.createElement('li');
+    const date = data.timestamp ? data.timestamp.toDate() : new Date();
+    const timeStr = date.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+    const typeLabel = data.type === 'in' ? '出勤' : '退勤';
+    const typeClass = data.type === 'in' ? 'status-in' : 'status-out';
+
+    let html = `
+        <span class="${typeClass}">${typeLabel}</span>
+        <span>${timeStr}</span>
+    `;
+
+    if (showName) {
+        html = `
+            <span>${data.empName}</span>
+            ${html}
+        `;
+    }
+
+    li.innerHTML = html;
+    container.appendChild(li);
+}

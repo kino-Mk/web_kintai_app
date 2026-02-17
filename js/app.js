@@ -24,6 +24,10 @@ function showScreen(screenId) {
     if (target) {
         target.classList.remove('hidden');
         target.classList.add('active');
+        // 画面変更フックを呼び出し (attendance.jsで定義)
+        if (typeof onScreenChanged === 'function') {
+            onScreenChanged(screenId);
+        }
     }
 
     // 「戻る」ボタンの表示制御
