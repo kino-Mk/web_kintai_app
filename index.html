@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>勤怠管理システム</title>
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/layout.css">
     <link rel="stylesheet" href="css/history.css">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#ffffff">
@@ -73,17 +74,24 @@
         <!-- 画面: 打刻 (出勤/退勤) -->
         <section id="screen-time-stamp" class="screen hidden">
             <h2 id="ts-employee-name">従業員名</h2>
-            <div class="timestamp-actions">
-                <button id="btn-clock-in" class="btn-large btn-clock-in">出勤</button>
-                <button id="btn-clock-out" class="btn-large btn-clock-out">退勤</button>
-            </div>
 
-            <div class="history-section">
-                <h3>本日の打刻履歴</h3>
-                <ul id="today-history-list-personal" class="history-list"></ul>
-            </div>
-            <div class="navigation-links">
-                <button id="btn-go-application" class="btn-secondary">勤怠申請へ</button>
+            <div class="split-view">
+                <div class="main-content">
+                    <div class="timestamp-actions">
+                        <button id="btn-clock-in" class="btn-large btn-clock-in">出勤</button>
+                        <button id="btn-clock-out" class="btn-large btn-clock-out">退勤</button>
+                    </div>
+                    <div class="navigation-links">
+                        <button id="btn-go-application" class="btn-secondary">勤怠申請へ</button>
+                    </div>
+                </div>
+
+                <div class="side-content">
+                    <div class="history-section">
+                        <h3>本日の打刻履歴</h3>
+                        <ul id="today-history-list-personal" class="history-list"></ul>
+                    </div>
+                </div>
             </div>
         </section>
 

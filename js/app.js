@@ -77,7 +77,10 @@ function selectEmployee(employee) {
 // グローバル初期化
 document.addEventListener('DOMContentLoaded', () => {
     loadEmployeesForSelection(); // admin.js で定義 (共有ロジック)
-    checkAdminAccess(); // 管理者モードチェック
+    if (!checkAdminAccess()) {
+        // 管理者モードでない場合、デフォルトで選択画面を表示（ここで履歴読み込みもトリガーされる）
+        showScreen('selection');
+    }
 });
 
 // 日付入力用に今日の日付文字列を取得するユーティリティ
