@@ -1,4 +1,11 @@
 // js/attendance.js
+console.log("attendance.js loaded");
+
+// DBの初期化チェック
+if (typeof db === 'undefined') {
+    console.error("Firestore 'db' is not initialized. Check firebase-config.js.");
+    alert("データベース接続エラー: 設定ファイル(firebase-config.js)を確認してください。");
+}
 
 // --- 打刻機能 ---
 
@@ -83,6 +90,7 @@ function getStartOfToday() {
 
 // 画面表示時のフック
 function onScreenChanged(screenId) {
+    console.log("onScreenChanged called with:", screenId);
     if (screenId === 'selection') {
         loadTodayHistoryAll();
     } else if (screenId === 'timeStamp' && currentEmployee) {
@@ -92,6 +100,11 @@ function onScreenChanged(screenId) {
 
 // 1. 全体の本日の打刻履歴 (選択画面用)
 function loadTodayHistoryAll() {
+    console.log("loadTodayHistoryAll called");
+    if (!db) {
+        console.error("DB not ready");
+        return;
+    }
     const list = document.getElementById('today-history-list-all');
     list.innerHTML = '<li class="loading-text">読み込み中...</li>';
 
