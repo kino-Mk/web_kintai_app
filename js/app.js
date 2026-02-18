@@ -34,7 +34,7 @@ function showScreen(screenId) {
     }
 
     // 「戻る」ボタンの表示制御
-    if (screenId === 'selection' || screenId === 'admin') {
+    if (screenId === 'selection' || screenId.startsWith('admin')) {
         navBackBtn.classList.add('hidden');
         if (screenId === 'selection') currentEmployee = null; // 選択リセット
     } else {
