@@ -54,16 +54,11 @@ function checkAdminAccess() {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('mode') === 'admin') {
         showScreen('admin');
-        loadAdminData(); // admin.js で定義
+        // loadAdminData(); // 削除: onScreenChangedで制御
         return true;
     }
     return false;
 }
-
-// document.getElementById('btn-go-admin').addEventListener('click', () => {
-//     showScreen('admin');
-//     loadAdminData(); // admin.js で定義
-// });
 
 // 従業員選択から特定ページへ遷移
 function selectEmployee(employee) {
