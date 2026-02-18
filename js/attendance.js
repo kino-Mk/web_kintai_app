@@ -88,12 +88,24 @@ function getStartOfToday() {
 // 画面表示時のフック
 // 画面表示時のフック
 function onScreenChanged(screenId) {
+    console.log("Screen Changed:", screenId);
     if (screenId === 'selection') {
         loadTodayHistoryAll();
     } else if (screenId === 'timeStamp' && currentEmployee) {
         loadTodayHistoryPersonal(currentEmployee.id);
     } else if (screenId === 'application' && currentEmployee) {
         updatePaidLeaveDisplay(currentEmployee.id);
+    } 
+    // Admin Sub-screens
+    else if (screenId === 'admin-pending') {
+        if (typeof loadPendingApplications === 'function') loadPendingApplications();
+    } else if (screenId === 'admin-completed') {
+        if (typeof loadCompletedApplications === 'function') {
+            const now = new Date();
+            const currentMonth = now.toISOString().slice(0, 7); // YYYY-MM
+            document.getElementById('filter-month').value = currentMonth;
+            loadCompletedApplications(currentMonth, "");
+        }
     }
 }
 
