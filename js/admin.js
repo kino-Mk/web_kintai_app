@@ -29,21 +29,53 @@ function loadEmployeesForSelection() {
 
             // 2. 管理者画面用
             const li = document.createElement('li');
+            li.className = 'admin-list-item'; // CSSでスタイリングするためにクラス追加
             li.style.display = 'flex';
-            li.style.justifyContent = 'space-between';
-            li.style.padding = '5px';
+            li.style.flexDirection = 'column'; // モバイル対応のため縦並び基本、PCで横並び
+            li.style.padding = '10px';
             li.style.borderBottom = '1px solid #eee';
+            li.style.gap = '10px';
 
-            const span = document.createElement('span');
-            span.textContent = `${emp.id}: ${emp.name}`;
+            // 情報表示エリア
+            const infoDiv = document.createElement('div');
+            infoDiv.textContent = `${emp.id}: ${emp.name}`;
+            infoDiv.style.fontWeight = 'bold';
+
+            // 有給管理エリア
+            const controlDiv = document.createElement('div');
+            controlDiv.style.display = 'flex';
+            controlDiv.style.alignItems = 'center';
+            controlDiv.style.gap = '10px';
+
+            const leaveLabel = document.createElement('span');
+            leaveLabel.textContent = '有給残:';
+            leaveLabel.style.fontSize = '0.9rem';
+
+            const leaveInput = document.createElement('input');
+            leaveInput.type = 'number';
+            leaveInput.value = emp.paidLeave !== undefined ? emp.paidLeave : 0; // デフォルト0
+            leaveInput.style.width = '60px';
+            leaveInput.style.padding = '5px';
+
+            const updateBtn = document.createElement('button');
+            updateBtn.textContent = '更新';
+            updateBtn.className = 'btn-secondary'; // 既存クラス流用
+            updateBtn.style.padding = '5px 10px';
+            updateBtn.style.fontSize = '0.8rem';
+            updateBtn.onclick = () => updatePaidLeave(doc.id, leaveInput.value);
 
             const delBtn = document.createElement('button');
             delBtn.textContent = '削除';
-            delBtn.className = 'delete-btn';
+            delBtn.className = 'delete-btn'; // 既存クラス流用 (赤色)
             delBtn.onclick = () => deleteEmployee(doc.id, emp.name);
 
-            li.appendChild(span);
-            li.appendChild(delBtn);
+            controlDiv.appendChild(leaveLabel);
+            controlDiv.appendChild(leaveInput);
+            controlDiv.appendChild(updateBtn);
+            controlDiv.appendChild(delBtn);
+
+            li.appendChild(infoDiv);
+            li.appendChild(controlDiv);
             listAdmin.appendChild(li);
         });
     }, (error) => {
