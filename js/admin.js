@@ -44,7 +44,7 @@ function loadEmployeesForSelection() {
                         <span id="disp-id-${emp.id}">${emp.id}</span>: <span id="disp-name-${emp.id}">${emp.name}</span>
                     </div>
                     <div>
-                        <button class="btn-secondary" onclick="toggleEditMode('${emp.id}', '${emp.name}')" style="padding: 5px 10px; font-size: 0.8rem;">編集</button>
+                        <button class="btn-secondary" onclick="toggleEditMode('${emp.id}')" style="padding: 5px 10px; font-size: 0.8rem;">編集</button>
                     </div>
                 </div>
                 <div class="view-mode-controls" style="display: flex; gap: 10px; align-items: center; margin-top: 5px;">
@@ -53,7 +53,6 @@ function loadEmployeesForSelection() {
             `;
 
             // 編集モードのHTML (初期は非表示)
-            // ID変更はリスクがあるため、警告を含めるか、慎重に実装
             const editModeHtml = `
                 <div class="edit-mode" style="display: none; width: 100%; flex-direction: column; gap: 5px;">
                     <div style="display: flex; gap: 5px; align-items: center;">

@@ -198,6 +198,17 @@ button {
     background-color: var(--danger-color);
 }
 
+.btn-success {
+    background-color: var(--success-color);
+    color: white;
+}
+
+.btn-warning {
+    background-color: #ffc107;
+    /* Standard Bootstrap warning color */
+    color: #212529;
+}
+
 /* List Styles */
 .list-group {
     display: flex;
