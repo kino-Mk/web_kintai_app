@@ -40,9 +40,22 @@
             <!-- Admin button removed for URL-based access -->
         </section>
 
-        <!-- 画面: 管理者 -->
+        <!-- 画面: 管理者メニュー (ダッシュボード) -->
         <section id="screen-admin" class="screen hidden">
             <h2>管理者メニュー</h2>
+            <div class="menu-grid">
+                <button class="btn-large btn-primary" onclick="showScreen('admin-employees')">従業員管理 & データ出力</button>
+                <button class="btn-large btn-warning" onclick="showScreen('admin-pending')">未処理の申請</button>
+                <button class="btn-large btn-success" onclick="showScreen('admin-completed')">処理済みの申請</button>
+            </div>
+        </section>
+
+        <!-- 画面: 従業員管理 & CSV -->
+        <section id="screen-admin-employees" class="screen hidden">
+            <div class="screen-header">
+                <h2>従業員管理</h2>
+                <button class="btn-secondary small" onclick="showScreen('admin')">戻る</button>
+            </div>
 
             <div class="card">
                 <h3>従業員登録</h3>
@@ -54,7 +67,7 @@
             <div class="card">
                 <h3>従業員一覧</h3>
                 <ul id="admin-employee-list-view">
-                    <!-- 削除用リスト -->
+                    <!-- リスト -->
                 </ul>
             </div>
 
@@ -63,29 +76,34 @@
                 <button id="btn-export-csv" class="btn-action">打刻データCSV出力</button>
                 <button id="btn-export-monthly-csv" class="btn-action">月次勤怠CSV出力</button>
             </div>
+        </section>
 
-            <div class="card">
-                <h3>未処理申請 (Pending)</h3>
-                <div id="admin-pending-list">
-                    <!-- 未処理申請リスト -->
-                    <p class="loading-text">読み込み中...</p>
-                </div>
+        <!-- 画面: 未処理申請 -->
+        <section id="screen-admin-pending" class="screen hidden">
+            <div class="screen-header">
+                <h2>未処理申請 (Pending)</h2>
+                <button class="btn-secondary small" onclick="showScreen('admin')">戻る</button>
             </div>
+            <div id="admin-pending-list">
+                <p class="loading-text">読み込み中...</p>
+            </div>
+        </section>
 
-            <div class="card">
-                <h3>処理済み申請 (Completed)</h3>
-                <div class="filters" style="margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
-                    <input type="month" id="filter-month" style="padding: 5px;">
-                    <select id="filter-employee" style="padding: 5px;">
-                        <option value="">全ての従業員</option>
-                        <!-- JSで動的に追加 -->
-                    </select>
-                    <button id="btn-filter-apply" class="btn-secondary" style="padding: 5px 10px;">検索</button>
-                </div>
-                <div id="admin-completed-list">
-                    <!-- 処理済み申請リスト -->
-                    <p>検索条件を指定してください</p>
-                </div>
+        <!-- 画面: 処理済み申請 -->
+        <section id="screen-admin-completed" class="screen hidden">
+            <div class="screen-header">
+                <h2>処理済み申請 (Completed)</h2>
+                <button class="btn-secondary small" onclick="showScreen('admin')">戻る</button>
+            </div>
+            <div class="filters" style="margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
+                <input type="month" id="filter-month" style="padding: 5px;">
+                <select id="filter-employee" style="padding: 5px;">
+                    <option value="">全ての従業員</option>
+                </select>
+                <button id="btn-filter-apply" class="btn-secondary" style="padding: 5px 10px;">検索</button>
+            </div>
+            <div id="admin-completed-list">
+                <p>検索条件を指定してください</p>
             </div>
         </section>
 

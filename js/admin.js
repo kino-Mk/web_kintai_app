@@ -27,55 +27,57 @@ function loadEmployeesForSelection() {
             btn.onclick = () => selectEmployee(emp); // app.jsで定義
             listSelection.appendChild(btn);
 
-            // 2. 管理者画面用
+            // 2. 管理者画面用 (編集機能付き)
             const li = document.createElement('li');
-            li.className = 'admin-list-item'; // CSSでスタイリングするためにクラス追加
+            li.className = 'admin-list-item';
+            li.id = `emp-row-${emp.id}`;
             li.style.display = 'flex';
-            li.style.flexDirection = 'column'; // モバイル対応のため縦並び基本、PCで横並び
+            li.style.flexDirection = 'column';
             li.style.padding = '10px';
             li.style.borderBottom = '1px solid #eee';
             li.style.gap = '10px';
 
-            // 情報表示エリア
-            const infoDiv = document.createElement('div');
-            infoDiv.textContent = `${emp.id}: ${emp.name}`;
-            infoDiv.style.fontWeight = 'bold';
+            // 表示モードのHTML
+            const viewModeHtml = `
+                <div class="view-mode" style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
+                    <div style="font-weight: bold;">
+                        <span id="disp-id-${emp.id}">${emp.id}</span>: <span id="disp-name-${emp.id}">${emp.name}</span>
+                    </div>
+                    <div>
+                        <button class="btn-secondary" onclick="toggleEditMode('${emp.id}', '${emp.name}')" style="padding: 5px 10px; font-size: 0.8rem;">編集</button>
+                    </div>
+                </div>
+                <div class="view-mode-controls" style="display: flex; gap: 10px; align-items: center; margin-top: 5px;">
+                    <span style="font-size: 0.9rem;">有給残: ${emp.paidLeave !== undefined ? emp.paidLeave : 0}</span>
+                </div>
+            `;
 
-            // 有給管理エリア
-            const controlDiv = document.createElement('div');
-            controlDiv.style.display = 'flex';
-            controlDiv.style.alignItems = 'center';
-            controlDiv.style.gap = '10px';
+            // 編集モードのHTML (初期は非表示)
+            // ID変更はリスクがあるため、警告を含めるか、慎重に実装
+            const editModeHtml = `
+                <div class="edit-mode" style="display: none; width: 100%; flex-direction: column; gap: 5px;">
+                    <div style="display: flex; gap: 5px; align-items: center;">
+                        <label>ID:</label>
+                        <input type="text" id="edit-id-${emp.id}" value="${emp.id}" style="width: 80px; padding: 5px;">
+                        <span style="font-size: 0.8rem; color: red;">※変更時、履歴は引き継がれません</span>
+                    </div>
+                    <div style="display: flex; gap: 5px; align-items: center;">
+                        <label>名:</label>
+                        <input type="text" id="edit-name-${emp.id}" value="${emp.name}" style="flex: 1; padding: 5px;">
+                    </div>
+                    <div style="display: flex; gap: 5px; align-items: center;">
+                        <label>有給:</label>
+                        <input type="number" id="edit-leave-${emp.id}" value="${emp.paidLeave !== undefined ? emp.paidLeave : 0}" style="width: 60px; padding: 5px;">
+                    </div>
+                    <div style="display: flex; gap: 10px; margin-top: 5px;">
+                        <button class="btn-primary" onclick="saveEmployeeByType('${emp.id}')" style="padding: 5px 15px;">保存</button>
+                        <button class="btn-secondary" onclick="cancelEditMode('${emp.id}')" style="padding: 5px 15px;">キャンセル</button>
+                        <button class="delete-btn" onclick="deleteEmployee('${emp.id}', '${emp.name}')" style="margin-left: auto;">削除</button>
+                    </div>
+                </div>
+            `;
 
-            const leaveLabel = document.createElement('span');
-            leaveLabel.textContent = '有給残:';
-            leaveLabel.style.fontSize = '0.9rem';
-
-            const leaveInput = document.createElement('input');
-            leaveInput.type = 'number';
-            leaveInput.value = emp.paidLeave !== undefined ? emp.paidLeave : 0; // デフォルト0
-            leaveInput.style.width = '60px';
-            leaveInput.style.padding = '5px';
-
-            const updateBtn = document.createElement('button');
-            updateBtn.textContent = '更新';
-            updateBtn.className = 'btn-secondary'; // 既存クラス流用
-            updateBtn.style.padding = '5px 10px';
-            updateBtn.style.fontSize = '0.8rem';
-            updateBtn.onclick = () => updatePaidLeave(doc.id, leaveInput.value);
-
-            const delBtn = document.createElement('button');
-            delBtn.textContent = '削除';
-            delBtn.className = 'delete-btn'; // 既存クラス流用 (赤色)
-            delBtn.onclick = () => deleteEmployee(doc.id, emp.name);
-
-            controlDiv.appendChild(leaveLabel);
-            controlDiv.appendChild(leaveInput);
-            controlDiv.appendChild(updateBtn);
-            controlDiv.appendChild(delBtn);
-
-            li.appendChild(infoDiv);
-            li.appendChild(controlDiv);
+            li.innerHTML = viewModeHtml + editModeHtml;
             listAdmin.appendChild(li);
         });
 
@@ -233,15 +235,12 @@ function downloadCSV(content, filename) {
 // --- 申請表示 ---
 // --- 申請表示 (ワークフロー) ---
 
+// --- 申請表示 (ワークフロー) ---
+
+// グローバルで初期化せず、画面表示時に呼ぶ形に変更推奨
+// 互換性のため残すが、中は空またはリダイレクトでもよい
 function loadAdminData() {
-    loadPendingApplications();
-    // 処理済みはデフォルトでは検索しないか、あるいは今月のデータを出すなど
-    // ここでは初期表示として「条件指定なし」または「今月」を表示してもよい
-    // 今回はユーザーが検索ボタンを押すまで空、または初期値で検索
-    const now = new Date();
-    const currentMonth = now.toISOString().slice(0, 7); // YYYY-MM
-    document.getElementById('filter-month').value = currentMonth;
-    loadCompletedApplications(currentMonth, "");
+    // 互換性のため残す
 }
 
 // 未処理申請の読み込み

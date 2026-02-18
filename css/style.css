@@ -60,11 +60,26 @@ body {
     padding: 0;
 }
 
+.screen-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #ddd;
+    padding-bottom: 10px;
+}
+
 .admin-list-item {
     background-color: #fff;
     border: 1px solid #ddd;
     border-radius: 4px;
     margin-bottom: 8px;
+}
+
+.menu-grid {
+    display: grid;
+    gap: 15px;
+    grid-template-columns: 1fr;
 }
 
 @media (min-width: 600px) {

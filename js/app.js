@@ -5,6 +5,9 @@ let currentEmployee = null;
 const screens = {
     selection: document.getElementById('screen-employee-selection'),
     admin: document.getElementById('screen-admin'),
+    'admin-employees': document.getElementById('screen-admin-employees'),
+    'admin-pending': document.getElementById('screen-admin-pending'),
+    'admin-completed': document.getElementById('screen-admin-completed'),
     timeStamp: document.getElementById('screen-time-stamp'),
     application: document.getElementById('screen-application')
 };
