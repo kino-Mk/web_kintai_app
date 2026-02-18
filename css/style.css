@@ -55,6 +55,26 @@ body {
     margin: 0;
 }
 
+#admin-view ul {
+    list-style: none;
+    padding: 0;
+}
+
+.admin-list-item {
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin-bottom: 8px;
+}
+
+@media (min-width: 600px) {
+    .admin-list-item {
+        flex-direction: row !important;
+        justify-content: space-between;
+        align-items: center;
+    }
+}
+
 #nav-back-btn {
     background: transparent;
     border: 1px solid white;
