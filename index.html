@@ -65,9 +65,26 @@
             </div>
 
             <div class="card">
-                <h3>申請一覧</h3>
-                <div id="admin-applications-list">
-                    <!-- 申請リスト -->
+                <h3>未処理申請 (Pending)</h3>
+                <div id="admin-pending-list">
+                    <!-- 未処理申請リスト -->
+                    <p class="loading-text">読み込み中...</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>処理済み申請 (Completed)</h3>
+                <div class="filters" style="margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
+                    <input type="month" id="filter-month" style="padding: 5px;">
+                    <select id="filter-employee" style="padding: 5px;">
+                        <option value="">全ての従業員</option>
+                        <!-- JSで動的に追加 -->
+                    </select>
+                    <button id="btn-filter-apply" class="btn-secondary" style="padding: 5px 10px;">検索</button>
+                </div>
+                <div id="admin-completed-list">
+                    <!-- 処理済み申請リスト -->
+                    <p>検索条件を指定してください</p>
                 </div>
             </div>
         </section>

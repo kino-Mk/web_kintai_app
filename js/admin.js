@@ -78,6 +78,22 @@ function loadEmployeesForSelection() {
             li.appendChild(controlDiv);
             listAdmin.appendChild(li);
         });
+
+        // 3. フィルタ用プルダウンの更新 (処理済み申請用)
+        const filterSelect = document.getElementById('filter-employee');
+        if (filterSelect) {
+            // 現在の選択値を保持
+            const currentVal = filterSelect.value;
+            filterSelect.innerHTML = '<option value="">全ての従業員</option>';
+            snapshot.forEach((doc) => {
+                const emp = doc.data();
+                const option = document.createElement('option');
+                option.value = emp.id;
+                option.textContent = emp.name;
+                filterSelect.appendChild(option);
+            });
+            filterSelect.value = currentVal;
+        }
     }, (error) => {
         console.error("Error loading employees:", error);
     });
@@ -215,33 +231,147 @@ function downloadCSV(content, filename) {
 }
 
 // --- 申請表示 ---
+// --- 申請表示 (ワークフロー) ---
+
 function loadAdminData() {
-    // 管理者用の従業員リストは共有関数ですでに読み込まれているが、
-    // ここでは申請を読み込む。
-    const listApp = document.getElementById('admin-applications-list');
+    loadPendingApplications();
+    // 処理済みはデフォルトでは検索しないか、あるいは今月のデータを出すなど
+    // ここでは初期表示として「条件指定なし」または「今月」を表示してもよい
+    // 今回はユーザーが検索ボタンを押すまで空、または初期値で検索
+    const now = new Date();
+    const currentMonth = now.toISOString().slice(0, 7); // YYYY-MM
+    document.getElementById('filter-month').value = currentMonth;
+    loadCompletedApplications(currentMonth, "");
+}
 
-    // 最近の申請をリッスン
-    db.collection("applications").orderBy("createdAt", "desc").limit(50).onSnapshot((snapshot) => {
-        listApp.innerHTML = "";
-        if (snapshot.empty) {
-            listApp.innerHTML = "<p>申請はありません。</p>";
-            return;
-        }
+// 未処理申請の読み込み
+function loadPendingApplications() {
+    const listPending = document.getElementById('admin-pending-list');
 
-        snapshot.forEach(doc => {
-            const data = doc.data();
-            const div = document.createElement('div');
-            div.className = 'application-item';
-            div.style.marginBottom = '10px';
-            div.innerHTML = `
+    // status がない (過去データ互換) または 'pending' のもの
+    // Firestore ORクエリは制限があるため、ここでは 'pending' を明示的に扱うか、
+    // 配列検索 ('in') を使う。既存データにstatusがない場合を考慮し、
+    // まずは単純に orderBy だけしてクライアントサイドでフィルタするか、
+    // データ移行が必要。
+    // 簡易対応: 全件取得して status !== 'completed' を表示 (件数が少なければこれでOK)
+
+    db.collection("applications")
+        .orderBy("createdAt", "desc") // 新しい順
+        .limit(50)
+        .onSnapshot((snapshot) => {
+            listPending.innerHTML = "";
+            if (snapshot.empty) {
+                listPending.innerHTML = "<p>未処理の申請はありません。</p>";
+                return;
+            }
+
+            let count = 0;
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                // ステータス判定: 'completed' 以外を表示 (undefined, null, 'pending')
+                if (data.status === 'completed') return;
+
+                count++;
+                const div = document.createElement('div');
+                div.className = 'application-item';
+                div.style.marginBottom = '10px';
+                div.style.borderLeft = '4px solid #f0ad4e'; // Pending color
+                div.innerHTML = `
                 <div><strong>${data.type}</strong>: ${data.empName} (${data.empId})</div>
                 <div style="font-size: 0.9rem; color: #666;">対象日: ${data.date}</div>
                 <div style="font-size: 0.9rem;">理由: ${data.reason || 'なし'}</div>
+                <div style="margin-top: 5px;">
+                    <button onclick="completeApplication('${doc.id}')" class="btn-primary" style="padding: 2px 8px; font-size: 0.8rem;">完了にする</button>
+                </div>
             `;
-            listApp.appendChild(div);
+                listPending.appendChild(div);
+            });
+
+            if (count === 0) {
+                listPending.innerHTML = "<p>未処理の申請はありません。</p>";
+            }
         });
-    });
 }
+
+// 処理済み申請の読み込み (フィルタ付き)
+function loadCompletedApplications(month, empId) {
+    const listCompleted = document.getElementById('admin-completed-list');
+    listCompleted.innerHTML = '<p class="loading-text">検索中...</p>';
+
+    let query = db.collection("applications")
+        .where("status", "==", "completed");
+
+    // 日付フィルタ (文字列比較 YYYY-MM)
+    if (month) {
+        // "2023-10" -> "2023-10-01" 〜 "2023-10-31"
+        // dateフィールドは文字列 "YYYY-MM-DD"
+        query = query.where("date", ">=", month + "-01")
+            .where("date", "<=", month + "-31");
+    }
+
+    // 従業員フィルタ
+    if (empId) {
+        query = query.where("empId", "==", empId);
+    }
+
+    query.orderBy("date", "desc") // 日付順
+        .limit(50)
+        .get() // 過去ログはリアルタイムでなくてよい (get)
+        .then((snapshot) => {
+            listCompleted.innerHTML = "";
+            if (snapshot.empty) {
+                listCompleted.innerHTML = "<p>該当する履歴はありません。</p>";
+                return;
+            }
+
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                const div = document.createElement('div');
+                div.className = 'application-item';
+                div.style.marginBottom = '10px';
+                div.style.borderLeft = '4px solid #5cb85c'; // Completed color
+                div.innerHTML = `
+                    <div><strong>${data.type}</strong>: ${data.empName} (${data.empId})</div>
+                    <div style="font-size: 0.9rem; color: #666;">対象日: ${data.date}</div>
+                    <div style="font-size: 0.9rem;">理由: ${data.reason || 'なし'}</div>
+                    <div style="font-size: 0.8rem; color: #aaa;">完了済み</div>
+                `;
+                listCompleted.appendChild(div);
+            });
+        })
+        .catch(error => {
+            console.error("Error loading completed apps:", error);
+            listCompleted.innerHTML = `<p>エラー: ${error.message}</p>`;
+            // インデックスが必要な場合のヒント
+            if (error.code === 'failed-precondition') {
+                console.warn("Index needed for this query.");
+            }
+        });
+}
+
+// 申請を完了ステータスにする
+function completeApplication(docId) {
+    if (!confirm("この申請を「処理済み」にしますか？")) return;
+
+    db.collection("applications").doc(docId).update({
+        status: 'completed',
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    })
+        .then(() => {
+            // alert("処理済みにしました"); 
+            // onSnapshotにより自動でリストから消えるのでアラート不要またはToast
+        })
+        .catch(err => {
+            alert("更新失敗: " + err.message);
+        });
+}
+
+// 検索ボタンイベント
+document.getElementById('btn-filter-apply').addEventListener('click', () => {
+    const month = document.getElementById('filter-month').value;
+    const empId = document.getElementById('filter-employee').value;
+    loadCompletedApplications(month, empId);
+});
 
 // 有給残日数の更新
 function updatePaidLeave(docId, days) {
