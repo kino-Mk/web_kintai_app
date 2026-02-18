@@ -49,7 +49,11 @@ document.getElementById('btn-submit-application').addEventListener('click', () =
         return;
     }
 
-    if (confirm(`${type}申請を行いますか？`)) {
+    let typeName = type;
+    if (type === '有給') typeName = '有給 (全休) (1日消費)';
+    if (type === '半休') typeName = '有給 (半休) (0.5日消費)';
+
+    if (confirm(`${typeName} の申請を行いますか？`)) {
         db.collection("applications").add({
             empId: currentEmployee.id,
             empName: currentEmployee.name,
@@ -82,12 +86,34 @@ function getStartOfToday() {
 }
 
 // 画面表示時のフック
+// 画面表示時のフック
 function onScreenChanged(screenId) {
     if (screenId === 'selection') {
         loadTodayHistoryAll();
     } else if (screenId === 'timeStamp' && currentEmployee) {
         loadTodayHistoryPersonal(currentEmployee.id);
+    } else if (screenId === 'application' && currentEmployee) {
+        updatePaidLeaveDisplay(currentEmployee.id);
     }
+}
+
+// 有給残日数を表示
+function updatePaidLeaveDisplay(empId) {
+    const infoDiv = document.getElementById('application-balance-info');
+    infoDiv.textContent = "読み込み中...";
+
+    db.collection("employees").doc(empId).get().then(doc => {
+        if (doc.exists) {
+            const data = doc.data();
+            const days = data.paidLeave !== undefined ? data.paidLeave : 0;
+            infoDiv.textContent = `現在の有給残日数: ${days} 日`;
+        } else {
+            infoDiv.textContent = "";
+        }
+    }).catch(err => {
+        console.error("Error fetching paid leave:", err);
+        infoDiv.textContent = "残日数読み込みエラー";
+    });
 }
 
 // 1. 全体の本日の打刻履歴 (選択画面用)

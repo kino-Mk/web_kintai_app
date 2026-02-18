@@ -99,14 +99,18 @@
         <!-- 画面: 勤怠申請 -->
         <section id="screen-application" class="screen hidden">
             <h2 id="app-employee-name">申請画面</h2>
+            <div id="application-balance-info" style="margin-bottom: 15px; font-weight: bold; color: #007bff;">
+                <!-- 有給残日数がここに表示されます -->
+            </div>
             <div class="application-form">
                 <label>申請種別</label>
                 <select id="application-type">
-                    <option value="有給">有給申請</option>
-                    <option value="欠勤">欠勤申請</option>
-                    <option value="遅刻">遅刻申請</option>
-                    <option value="早退">早退申請</option>
-                    <option value="残業">残業申請</option>
+                    <option value="有給">有給 (全休)</option>
+                    <option value="半休">有給 (半休)</option>
+                    <option value="欠勤">欠勤</option>
+                    <option value="遅刻">遅刻</option>
+                    <option value="早退">早退</option>
+                    <option value="残業">残業</option>
                 </select>
 
                 <label>日付</label>
