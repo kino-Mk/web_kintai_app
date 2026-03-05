@@ -861,6 +861,7 @@ async function openEmployeeDetail(empId) {
         // 非同期読み込み
         calculateMonthlyRates(empId);
         loadEmployeeAttendanceDetail(empId, currentMonthStr);
+        loadDetailMissingCheckoutAlert(empId);
         loadEmployeePendingApplications(empId);
         loadEmployeeCompletedApplications(empId, 'month', currentMonthStr);
         updateDetailYearSelector();
@@ -2293,6 +2294,77 @@ function loadAdminAlerts() {
     loadMissingCheckoutAlert();
     loadPendingAppsAlert();
     loadPendingCorrectionsAlert();
+}
+
+// 従業員詳細画面: 打刻漏れアラート表示
+async function loadDetailMissingCheckoutAlert(empId) {
+    const card = document.getElementById('detail-missing-checkout-alert');
+    const list = document.getElementById('detail-missing-checkout-list');
+    if (!card || !list) return;
+
+    // 初期状態は非表示
+    card.classList.add('hidden');
+    list.innerHTML = '';
+
+    try {
+        // 該当従業員の全打刻データを取得
+        const snapshot = await db.collection("attendance")
+            .where("empId", "==", empId)
+            .orderBy("timestamp", "asc")
+            .get();
+
+        if (snapshot.empty) return;
+
+        // 日ごとに打刻を整理
+        const dayMap = {};
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            if (!data.timestamp) return;
+            const dateObj = toDate(data.timestamp);
+            const dateKey = formatDate(dateObj);
+            if (!dayMap[dateKey]) dayMap[dateKey] = [];
+            dayMap[dateKey].push({
+                type: data.type,
+                time: dateObj
+            });
+        });
+
+        // 本日の日付キー（本日はまだ退勤していない可能性があるため除外）
+        const todayKey = formatDate(new Date());
+
+        // 各日の最終打刻が「出勤」のままの日を抽出
+        const missingDays = [];
+        for (const [dateKey, records] of Object.entries(dayMap)) {
+            if (dateKey === todayKey) continue; // 本日は除外
+            // 時系列でソート済み（クエリでasc指定）
+            const lastRecord = records[records.length - 1];
+            if (lastRecord.type === 'in') {
+                missingDays.push({
+                    date: dateKey,
+                    time: lastRecord.time
+                });
+            }
+        }
+
+        if (missingDays.length === 0) return;
+
+        // 日付の降順でソート（新しい順）
+        missingDays.sort((a, b) => b.time - a.time);
+
+        // アラートを表示
+        card.classList.remove('hidden');
+        missingDays.forEach(day => {
+            const item = document.createElement('div');
+            item.className = 'alert-item';
+            item.innerHTML = `
+                <span class="alert-item-name">${day.date}</span>
+                <span class="alert-item-detail">出勤: ${formatTime(day.time)} — 退勤未打刻</span>
+            `;
+            list.appendChild(item);
+        });
+    } catch (error) {
+        console.error("Detail missing checkout alert error:", error);
+    }
 }
 
 // 打刻漏れ検出（前日に出勤して退勤していない従業員）

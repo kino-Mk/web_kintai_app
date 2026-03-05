@@ -297,6 +297,15 @@
 
             <!-- タブ: 勤務記録 -->
             <div id="tab-detail-attendance" class="tab-content">
+                <!-- 打刻漏れアラート（該当従業員） -->
+                <div id="detail-missing-checkout-alert" class="alert-card alert-warning hidden"
+                    style="margin-bottom: 15px;">
+                    <div class="alert-card-header">
+                        <span class="alert-icon">⚠️</span>
+                        <span class="alert-title">打刻漏れ</span>
+                    </div>
+                    <div id="detail-missing-checkout-list" class="alert-card-body"></div>
+                </div>
                 <div class="card">
                     <h3 class="section-title-sub">🕒 打刻データの管理</h3>
 
