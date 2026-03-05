@@ -2295,17 +2295,21 @@ function loadAdminAlerts() {
     loadPendingCorrectionsAlert();
 }
 
-// 打刻漏れ検出（最終打刻が「出勤」のままの従業員）
+// 打刻漏れ検出（前日に出勤して退勤していない従業員）
 function loadMissingCheckoutAlert() {
     const card = document.getElementById('alert-missing-checkout');
     const list = document.getElementById('alert-missing-list');
     const badge = document.getElementById('alert-missing-badge');
     if (!card) return;
 
-    const start = getStartOfToday();
+    // 前日の範囲を計算
+    const today = getStartOfToday();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
 
     const unsub = db.collection("attendance")
-        .where("timestamp", ">=", start)
+        .where("timestamp", ">=", yesterday)
+        .where("timestamp", "<", today)
         .orderBy("timestamp", "asc")
         .onSnapshot(snapshot => {
             // 従業員ごとの最終打刻状態を集計
@@ -2331,10 +2335,15 @@ function loadMissingCheckoutAlert() {
                 missing.forEach(emp => {
                     const item = document.createElement('div');
                     item.className = 'alert-item';
+                    item.style.cursor = 'pointer';
                     item.innerHTML = `
                         <span class="alert-item-name">${emp.name}</span>
                         <span class="alert-item-detail">出勤: ${formatTime(emp.time)} — 退勤未打刻</span>
                     `;
+                    // クリックで打刻データ管理画面へ遷移
+                    item.addEventListener('click', () => {
+                        showScreen('admin-attendance');
+                    });
                     list.appendChild(item);
                 });
             } else {

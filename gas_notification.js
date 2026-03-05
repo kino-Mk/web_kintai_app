@@ -1,110 +1,125 @@
-// =============================================
-// GAS (Google Apps Script) - 勤怠管理システム通知
-// =============================================
-// このコードを既存のGASプロジェクトに追加してください。
-// 既存の doPost 関数を以下の内容に置き換えてください。
+// === 設定 ===
+var RESET_PAGE_BASE_URL = 'https://kino-mk.github.io/web_kintai_app/reset-password.html';
+var ADMIN_EMAIL = 'daichi-tamai@soltec-jsc.co.jp';
 
-// 管理者通知先メールアドレス
-const ADMIN_EMAIL = 'daichi-tamai@soltec-jsc.co.jp';
+// === メイン処理 ===
 
+// WebApp の POST エンドポイント
 function doPost(e) {
     try {
-        const data = JSON.parse(e.postData.contents);
+        var data = JSON.parse(e.postData.contents);
 
-        // リクエストのタイプに応じて処理を分岐
-        if (data.action === 'passwordReset') {
-            // 既存のパスワードリセット処理
-            return handlePasswordReset(data);
-        } else if (data.action === 'notifyApplication') {
-            // 勤怠申請通知
+        // action パラメータで処理を分岐
+        if (data.action === 'notifyApplication') {
             return handleApplicationNotification(data);
         } else if (data.action === 'notifyStampCorrection') {
-            // 打刻修正申請通知
             return handleStampCorrectionNotification(data);
         }
 
-        // 後方互換: actionが未指定の場合はパスワードリセットとして処理
-        if (data.token) {
-            return handlePasswordReset(data);
+        // action未指定 = 既存のパスワードリセット処理（後方互換）
+        var email = data.email;
+        var token = data.token;
+        var empName = data.empName || '従業員';
+
+        if (!email || !token) {
+            return jsonResponse({ success: false, message: 'パラメータが不足しています。' });
         }
 
-        return ContentService.createTextOutput(
-            JSON.stringify({ success: false, message: '不明なアクションです' })
-        ).setMimeType(ContentService.MimeType.JSON);
+        var resetLink = RESET_PAGE_BASE_URL + '?token=' + token;
+        sendResetEmail(email, empName, resetLink);
+
+        return jsonResponse({ success: true, message: 'メールを送信しました。' });
 
     } catch (error) {
-        return ContentService.createTextOutput(
-            JSON.stringify({ success: false, message: error.message })
-        ).setMimeType(ContentService.MimeType.JSON);
+        console.error('doPost error:', error);
+        return jsonResponse({ success: false, message: 'メール送信エラー: ' + error.message });
     }
 }
 
-// パスワードリセット処理（既存ロジック）
-function handlePasswordReset(data) {
-    // ※ 既存のパスワードリセット処理をここに移動してください
-    // 以下はテンプレートです
-    const resetUrl = 'https://kintai-f2c7f.web.app/reset-password.html?token=' + data.token;
-
-    const subject = '【勤怠管理】パスワードリセット';
-    const body = `${data.empName} さん\n\nパスワードリセットのリクエストを受け付けました。\n以下のリンクからパスワードを再設定してください（1時間以内に有効）:\n\n${resetUrl}\n\nこのリクエストに心当たりがない場合は、このメールを無視してください。`;
-
-    GmailApp.sendEmail(data.email, subject, body);
-
-    return ContentService.createTextOutput(
-        JSON.stringify({ success: true })
-    ).setMimeType(ContentService.MimeType.JSON);
+// テスト用: GETリクエストで動作確認
+function doGet(e) {
+    return jsonResponse({ status: 'ok', message: 'GAS WebApp is running.' });
 }
 
-// 勤怠申請通知
+// === パスワードリセットメール（既存） ===
+
+function sendResetEmail(toEmail, empName, resetLink) {
+    var subject = '【勤怠管理】パスワードリセットのご案内';
+    var body = empName + ' さん\n\n'
+        + 'パスワードリセットのリクエストを受け付けました。\n'
+        + '以下のリンクからパスワードを再設定してください。\n\n'
+        + '━━━━━━━━━━━━━━━━━━━━\n'
+        + resetLink + '\n'
+        + '━━━━━━━━━━━━━━━━━━━━\n\n'
+        + '※ このリンクの有効期限は1時間です。\n'
+        + '※ 心当たりのない場合は、このメールを無視してください。\n\n'
+        + '--\n'
+        + '勤怠管理システム (自動送信)';
+
+    GmailApp.sendEmail(toEmail, subject, body, { name: '勤怠管理システム' });
+    console.log('Reset email sent to:', toEmail);
+}
+
+// === 勤怠申請通知メール（新規） ===
+
 function handleApplicationNotification(data) {
-    const subject = `【勤怠管理】${data.empName} さんから${data.type}の申請`;
-    const body = [
-        `${data.empName} さん（ID: ${data.empId}）から新しい申請が届きました。`,
-        '',
-        `種別: ${data.type}`,
-        `対象日: ${data.date}`,
-        data.reason ? `理由: ${data.reason}` : '',
-        '',
-        '管理者画面から確認・処理してください。',
-        'https://kintai-f2c7f.web.app/?mode=admin'
-    ].filter(Boolean).join('\n');
+    var subject = '【勤怠管理】' + data.empName + ' さんから' + data.type + 'の申請';
+    var body = data.empName + ' さん（ID: ' + data.empId + '）から新しい申請が届きました。\n\n'
+        + '種別: ' + data.type + '\n'
+        + '対象日: ' + data.date + '\n'
+        + (data.reason ? '理由: ' + data.reason + '\n' : '')
+        + '\n管理者画面から確認・処理してください。\n'
+        + 'https://kintai-f2c7f.web.app/?mode=admin\n\n'
+        + '--\n'
+        + '勤怠管理システム (自動送信)';
 
-    GmailApp.sendEmail(ADMIN_EMAIL, subject, body);
+    GmailApp.sendEmail(ADMIN_EMAIL, subject, body, { name: '勤怠管理システム' });
+    console.log('Application notification sent to:', ADMIN_EMAIL);
 
-    return ContentService.createTextOutput(
-        JSON.stringify({ success: true })
-    ).setMimeType(ContentService.MimeType.JSON);
+    return jsonResponse({ success: true });
 }
 
-// 打刻修正申請通知
-function handleStampCorrectionNotification(data) {
-    const subject = `【勤怠管理】打刻修正申請 (${data.count}件)`;
+// === 打刻修正申請通知メール（新規） ===
 
-    const lines = [
-        '打刻修正申請が届きました。',
-        '',
-        `申請件数: ${data.count} 件`
-    ];
+function handleStampCorrectionNotification(data) {
+    var subject = '【勤怠管理】打刻修正申請 (' + data.count + '件)';
+    var lines = [];
+    lines.push('打刻修正申請が届きました。');
+    lines.push('');
+    lines.push('申請件数: ' + data.count + ' 件');
 
     // 各申請の詳細
     if (data.details && data.details.length > 0) {
         lines.push('');
-        data.details.forEach((d, i) => {
-            const typeLabel = d.type === 'in' ? '出勤' : '退勤';
-            lines.push(`${i + 1}. ${d.empName}（${d.empId}）- ${typeLabel} ${d.time}`);
-        });
+        for (var i = 0; i < data.details.length; i++) {
+            var d = data.details[i];
+            var typeLabel = d.type === 'in' ? '出勤' : '退勤';
+            lines.push((i + 1) + '. ' + d.empName + '（' + d.empId + '）- ' + typeLabel + ' ' + d.time);
+        }
     }
 
     if (data.reason) {
-        lines.push('', `理由: ${data.reason}`);
+        lines.push('');
+        lines.push('理由: ' + data.reason);
     }
 
-    lines.push('', '管理者画面から確認・処理してください。');
+    lines.push('');
+    lines.push('管理者画面から確認・処理してください。');
     lines.push('https://kintai-f2c7f.web.app/?mode=admin');
+    lines.push('');
+    lines.push('--');
+    lines.push('勤怠管理システム (自動送信)');
 
-    GmailApp.sendEmail(ADMIN_EMAIL, subject, lines.join('\n'));
+    GmailApp.sendEmail(ADMIN_EMAIL, subject, lines.join('\n'), { name: '勤怠管理システム' });
+    console.log('Stamp correction notification sent to:', ADMIN_EMAIL);
 
-    return ContentService.createTextOutput(
-        JSON.stringify({ success: true })
-    ).setMimeType(ContentService.MimeType.JSON);
+    return jsonResponse({ success: true });
+}
+
+// === ユーティリティ ===
+
+function jsonResponse(data) {
+    return ContentService
+        .createTextOutput(JSON.stringify(data))
+        .setMimeType(ContentService.MimeType.JSON);
 }
