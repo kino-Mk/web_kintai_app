@@ -1,5 +1,13 @@
 // js/attendance.js
 
+// メール通知送信（バックグラウンド、失敗しても申請には影響なし）
+function sendNotificationEmail(payload) {
+    fetch(GAS_WEBAPP_URL, {
+        method: 'POST',
+        body: JSON.stringify(payload)
+    }).catch(err => console.error('メール通知送信エラー:', err));
+}
+
 // --- 状態管理 (従業員選択タブ用) ---
 let currentSelectionTab = 'all';
 let currentDayAttendanceStates = {}; // { empId: 'in' | 'out' }
@@ -171,6 +179,17 @@ document.getElementById('btn-submit-application').addEventListener('click', asyn
 
     try {
         await db.collection("applications").add(applicationData);
+
+        // メール通知（バックグラウンド）
+        sendNotificationEmail({
+            action: 'notifyApplication',
+            empId: currentEmployee.id,
+            empName: currentEmployee.name,
+            type: type,
+            date: date,
+            reason: reason
+        });
+
         await showAlert("申請しました");
         document.getElementById('application-reason').value = "";
         document.getElementById('application-start-time').value = "";
@@ -503,6 +522,21 @@ document.getElementById('btn-correction-submit').addEventListener('click', async
         });
 
         await batch.commit();
+
+        // メール通知（バックグラウンド）
+        const details = Array.from(checkboxes).map(cb => ({
+            empId: cb.dataset.empId,
+            empName: cb.dataset.empName,
+            type: cb.dataset.type,
+            time: new Date(cb.dataset.time).toLocaleString('ja-JP')
+        }));
+        sendNotificationEmail({
+            action: 'notifyStampCorrection',
+            count: checkboxes.length,
+            reason: reason,
+            details: details
+        });
+
         await showAlert("打刻修正申請を送信しました。管理者の承認をお待ちください。");
         document.getElementById('stamp-correction-modal').classList.add('hidden');
     } catch (error) {
