@@ -8,7 +8,7 @@ let allEmployeesCache = [];
 function loadEmployeesForSelection() {
     const listAdmin = document.getElementById('admin-employee-list-view');
 
-    db.collection("employees").orderBy("id").onSnapshot((snapshot) => {
+    db.collection('employees').orderBy('id').onSnapshot((snapshot) => {
         allEmployeesCache = [];
         listAdmin.innerHTML = "";
 
@@ -30,8 +30,8 @@ function loadEmployeesForSelection() {
         // 従業員選択リストの描画
         renderEmployeeSelection();
     }, (error) => {
-        console.error("Error loading employees:", error);
-        reportError(error, "従業員一覧読み込み");
+        console.error('Error loading employees:', error);
+        reportError(error, '従業員一覧読み込み');
     });
 }
 
@@ -124,9 +124,9 @@ function renderAdminEmployeeItem(container, emp) {
 async function calculateLeaveBalanceForList(empId, spanId) {
     try {
         // 付与履歴を取得
-        const grantsSnapshot = await db.collection("leaveGrants")
-            .where("empId", "==", empId)
-            .orderBy("grantDate", "asc")
+        const grantsSnapshot = await db.collection('leaveGrants')
+            .where('empId', "==", empId)
+            .orderBy('grantDate', 'asc')
             .get();
 
         const grants = [];
@@ -137,9 +137,9 @@ async function calculateLeaveBalanceForList(empId, spanId) {
         });
 
         // 使用済み申請を取得 (有給・半休、ステータス=completed)
-        const appsSnapshot = await db.collection("applications")
-            .where("empId", "==", empId)
-            .where("status", "==", "completed")
+        const appsSnapshot = await db.collection('applications')
+            .where('empId', "==", empId)
+            .where('status', "==", 'completed')
             .get();
 
         let totalUsedDays = 0;
@@ -159,7 +159,7 @@ async function calculateLeaveBalanceForList(empId, spanId) {
             span.textContent = remaining;
         }
     } catch (error) {
-        console.error("Leave balance calc error for", empId, error);
+        console.error('Leave balance calc error for', empId, error);
         const span = document.getElementById(spanId);
         if (span) {
             span.textContent = "?";
@@ -205,21 +205,21 @@ document.getElementById('btn-add-employee').addEventListener('click', async () =
     const name = nameInput.value.trim();
 
     if (!id || !name) {
-        await showAlert("IDと氏名を入力してください");
+        await showAlert('IDと氏名を入力してください');
         return;
     }
 
     try {
-        await db.collection("employees").doc(id).set({
+        await db.collection('employees').doc(id).set({
             id: id,
             name: name,
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
-        await showAlert("従業員を登録しました");
+        await showAlert('従業員を登録しました');
         idInput.value = "";
         nameInput.value = "";
     } catch (error) {
-        console.error("Error adding employee: ", error);
+        console.error('Error adding employee: ', error);
         await showAlert("エラーが発生しました: " + error.message);
     }
 });
@@ -228,8 +228,8 @@ document.getElementById('btn-add-employee').addEventListener('click', async () =
 async function deleteEmployee(docId, name) {
     if (!(await showConfirm(`${name} さんを削除してもよろしいですか？`))) return;
     try {
-        await db.collection("employees").doc(docId).delete();
-        await showAlert("削除しました");
+        await db.collection('employees').doc(docId).delete();
+        await showAlert('削除しました');
     } catch (error) {
         await showAlert("削除に失敗しました: " + error.message);
     }
@@ -240,7 +240,7 @@ async function deleteEmployee(docId, name) {
 // 1. 生データエクスポート: "従業員ID, 氏名, YYYYMMDDHHMM"
 document.getElementById('btn-export-csv').addEventListener('click', async () => {
     try {
-        const snapshot = await db.collection("attendance").orderBy("timestamp", "desc").get();
+        const snapshot = await db.collection('attendance').orderBy('timestamp', 'desc').get();
 
         let csvContent = "従業員ID, 従業員氏名, 打刻日時\n";
 
@@ -251,9 +251,9 @@ document.getElementById('btn-export-csv').addEventListener('click', async () => 
             csvContent += `${data.empId}, ${data.empName}, ${formattedTime}\n`;
         });
 
-        downloadCSV(csvContent, "attendance_raw.csv");
+        downloadCSV(csvContent, 'attendance_raw.csv');
     } catch (error) {
-        console.error("Export error:", error);
+        console.error('Export error:', error);
         await showAlert("エクスポートに失敗しました: " + error.message);
     }
 });
@@ -264,7 +264,7 @@ document.getElementById('btn-export-monthly-csv').addEventListener('click', asyn
     const selectedMonth = monthInput ? monthInput.value : '';
 
     if (!selectedMonth) {
-        await showAlert("対象月を選択してください。");
+        await showAlert('対象月を選択してください。');
         return;
     }
 
@@ -290,10 +290,10 @@ document.getElementById('btn-export-monthly-csv').addEventListener('click', asyn
         const endDate = new Date(year, month - 1, 21, 0, 0, 0);
 
         // 選択された月のデータのみ取得
-        const snapshot = await db.collection("attendance")
-            .where("timestamp", ">=", startDate)
-            .where("timestamp", "<", endDate)
-            .orderBy("timestamp", "asc")
+        const snapshot = await db.collection('attendance')
+            .where('timestamp', ">=", startDate)
+            .where('timestamp', "<", endDate)
+            .orderBy('timestamp', 'asc')
             .get();
 
         if (snapshot.empty) {
@@ -345,7 +345,7 @@ document.getElementById('btn-export-monthly-csv').addEventListener('click', asyn
 
         downloadCSV(csvContent, `attendance_monthly_${selectedMonth}.csv`);
     } catch (error) {
-        console.error("Export error:", error);
+        console.error('Export error:', error);
         await showAlert("エクスポートに失敗しました: " + error.message);
     }
 });
@@ -371,12 +371,12 @@ function downloadCSV(content, filename) {
 
 // 申請を完了ステータスにする
 async function completeApplication(docId) {
-    if (!(await showConfirm("この申請を承認し「処理済み」にしますか？\n（承認録として打刻データが自動生成されます）"))) return;
+    if (!(await showConfirm('この申請を承認し「処理済み」にしますか？\n（承認録として打刻データが自動生成されます）'))) return;
 
     try {
-        const appDoc = await db.collection("applications").doc(docId).get();
+        const appDoc = await db.collection('applications').doc(docId).get();
         if (!appDoc.exists) {
-            await showAlert("申請データが見つかりません。");
+            await showAlert('申請データが見つかりません。');
             return;
         }
 
@@ -398,7 +398,7 @@ async function completeApplication(docId) {
             const [hours, minutes] = targetTimeStr.split(':').map(Number);
             const targetDate = new Date(years, months - 1, days, hours, minutes);
 
-            await db.collection("attendance").add({
+            await db.collection('attendance').add({
                 empId: appData.empId,
                 empName: appData.empName,
                 type: attType,
@@ -409,7 +409,7 @@ async function completeApplication(docId) {
         }
 
         // 申請ステータスを更新
-        await db.collection("applications").doc(docId).update({
+        await db.collection('applications').doc(docId).update({
             status: 'completed',
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         });
@@ -417,7 +417,7 @@ async function completeApplication(docId) {
         // 成功（リアルタイムリスナーが自動で反映）
 
     } catch (error) {
-        console.error("Complete application error:", error);
+        console.error('Complete application error:', error);
         await showAlert("処理に失敗しました: " + error.message);
     }
 }
@@ -455,20 +455,20 @@ async function loadAdminAttendanceData(month, empId) {
     delBtn.style.display = 'none';
 
     try {
-        let query = db.collection("attendance");
+        let query = db.collection('attendance');
 
         if (month) {
             const startDate = new Date(`${month}-01T00:00:00`);
             const endDate = new Date(startDate);
             endDate.setMonth(endDate.getMonth() + 1);
-            query = query.where("timestamp", ">=", startDate).where("timestamp", "<", endDate);
+            query = query.where('timestamp', ">=", startDate).where('timestamp', "<", endDate);
         }
 
         if (empId) {
-            query = query.where("empId", "==", empId);
+            query = query.where('empId', "==", empId);
         }
 
-        const snapshot = await query.orderBy("timestamp", "desc")
+        const snapshot = await query.orderBy('timestamp', 'desc')
             .limit(100)
             .get();
 
@@ -506,7 +506,7 @@ async function loadAdminAttendanceData(month, empId) {
             listAtt.appendChild(div);
         });
     } catch (error) {
-        console.error("Error loading attendance data:", error);
+        console.error('Error loading attendance data:', error);
         listAtt.innerHTML = `<p>エラー: ${error.message}</p>`;
     }
 }
@@ -522,7 +522,7 @@ document.getElementById('btn-filter-att-apply').addEventListener('click', () => 
 document.getElementById('btn-delete-selected-att').addEventListener('click', async () => {
     const checkboxes = document.querySelectorAll('.att-delete-checkbox:checked');
     if (checkboxes.length === 0) {
-        await showAlert("削除する打刻データを選択してください。");
+        await showAlert('削除する打刻データを選択してください。');
         return;
     }
 
@@ -534,7 +534,7 @@ document.getElementById('btn-delete-selected-att').addEventListener('click', asy
         const batch = db.batch();
         checkboxes.forEach(cb => {
             const docId = cb.value;
-            batch.delete(db.collection("attendance").doc(docId));
+            batch.delete(db.collection('attendance').doc(docId));
         });
         await batch.commit();
 
@@ -544,7 +544,7 @@ document.getElementById('btn-delete-selected-att').addEventListener('click', asy
         const empId = document.getElementById('filter-att-employee').value;
         loadAdminAttendanceData(month, empId);
     } catch (error) {
-        console.error("Delete error:", error);
+        console.error('Delete error:', error);
         await showAlert("削除に失敗しました: " + error.message);
     }
 });
@@ -556,7 +556,7 @@ document.getElementById('btn-calendar-load').addEventListener('click', async () 
     if (month) {
         renderCalendar(month);
     } else {
-        await showAlert("対象月を選択してください。");
+        await showAlert('対象月を選択してください。');
     }
 });
 
@@ -574,7 +574,7 @@ function renderCalendar(monthStr) {
     const startDateStr = `${monthStr}-01`;
     const endDateStr = `${monthStr}-${String(lastDay.getDate()).padStart(2, '0')}`;
 
-    db.collection("holidays")
+    db.collection('holidays')
         .where(firebase.firestore.FieldPath.documentId(), ">=", startDateStr)
         .where(firebase.firestore.FieldPath.documentId(), "<=", endDateStr)
         .get()
@@ -591,7 +591,7 @@ function renderCalendar(monthStr) {
             grid.classList.remove('hidden');
         })
         .catch(error => {
-            console.error("Error loading holidays:", error);
+            console.error('Error loading holidays:', error);
             msg.textContent = "休日データの読み込みに失敗しました。";
         });
 }
@@ -645,17 +645,17 @@ async function toggleHoliday(dateString, element) {
 
     try {
         if (isCurrentlyHoliday) {
-            await db.collection("holidays").doc(dateString).delete();
+            await db.collection('holidays').doc(dateString).delete();
             element.classList.remove('holiday');
         } else {
-            await db.collection("holidays").doc(dateString).set({
+            await db.collection('holidays').doc(dateString).set({
                 isHoliday: true,
                 updatedAt: firebase.firestore.FieldValue.serverTimestamp()
             });
             element.classList.add('holiday');
         }
     } catch (error) {
-        console.error("Update error:", error);
+        console.error('Update error:', error);
         await showAlert("更新エラー: " + error.message);
     }
 }
@@ -666,7 +666,7 @@ document.getElementById('btn-calendar-auto-set').addEventListener('click', async
     if (month) {
         autoSetHolidays(month);
     } else {
-        await showAlert("対象月を選択してください。");
+        await showAlert('対象月を選択してください。');
     }
 });
 
@@ -700,7 +700,7 @@ async function autoSetHolidays(monthStr) {
             const isPublicHoliday = !!holidayData[dateString];
 
             if (isWeekend || isPublicHoliday) {
-                const docRef = db.collection("holidays").doc(dateString);
+                const docRef = db.collection('holidays').doc(dateString);
                 batch.set(docRef, {
                     isHoliday: true,
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
@@ -715,11 +715,11 @@ async function autoSetHolidays(monthStr) {
             await showAlert(`${count} 日分を休日として設定しました。`);
             renderCalendar(monthStr);
         } else {
-            await showAlert("設定対象の日が見つかりませんでした。");
+            await showAlert('設定対象の日が見つかりませんでした。');
         }
 
     } catch (error) {
-        console.error("Auto set holidays error:", error);
+        console.error('Auto set holidays error:', error);
         await showAlert("エラーが発生しました: " + error.message);
     } finally {
         btn.disabled = false;
@@ -754,9 +754,9 @@ async function openEmployeeDetail(empId) {
     currentDetailEmpId = empId;
 
     try {
-        const doc = await db.collection("employees").doc(empId).get();
+        const doc = await db.collection('employees').doc(empId).get();
         if (!doc.exists) {
-            await showAlert("従業員データが見つかりません。");
+            await showAlert('従業員データが見つかりません。');
             return;
         }
         const emp = doc.data();
@@ -790,8 +790,8 @@ async function openEmployeeDetail(empId) {
 
         switchDetailTab('basic');
     } catch (error) {
-        console.error("Error loading employee detail:", error);
-        await showAlert("従業員データの読み込みに失敗しました。");
+        console.error('Error loading employee detail:', error);
+        await showAlert('従業員データの読み込みに失敗しました。');
     }
 }
 
@@ -803,20 +803,20 @@ async function calculateMonthlyRates(empId) {
         const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
         // 休日データ取得
-        const holidaysSnapshot = await db.collection("holidays").get();
+        const holidaysSnapshot = await db.collection('holidays').get();
         const holidaySet = new Set();
         holidaysSnapshot.forEach(doc => { holidaySet.add(doc.id); });
 
         // 出勤打刻データ取得
-        const attSnapshot = await db.collection("attendance")
-            .where("empId", "==", empId)
-            .where("type", "==", "in")
+        const attSnapshot = await db.collection('attendance')
+            .where('empId', "==", empId)
+            .where('type', "==", 'in')
             .get();
 
         // 承認済みの有給申請データ取得
-        const appsSnapshot = await db.collection("applications")
-            .where("empId", "==", empId)
-            .where("status", "==", "completed")
+        const appsSnapshot = await db.collection('applications')
+            .where('empId', "==", empId)
+            .where('status', "==", 'completed')
             .get();
 
         const includePaidLeave = document.getElementById('toggle-include-paid-leave').checked;
@@ -941,7 +941,7 @@ async function calculateMonthlyRates(empId) {
         }
 
     } catch (error) {
-        console.error("Monthly rate calculation error:", error);
+        console.error('Monthly rate calculation error:', error);
         const container = document.getElementById('detail-monthly-rates');
         if (container) container.textContent = '月別出勤率の計算に失敗しました。';
     }
@@ -965,24 +965,24 @@ document.getElementById('btn-detail-save').addEventListener('click', async () =>
     const isHidden = document.getElementById('detail-emp-hidden').checked;
 
     if (!newName) {
-        await showAlert("氏名を入力してください。");
+        await showAlert('氏名を入力してください。');
         return;
     }
 
     try {
-        await db.collection("employees").doc(currentDetailEmpId).update({
+        await db.collection('employees').doc(currentDetailEmpId).update({
             name: newName,
             paidLeave: newLeave,
             isHidden: isHidden,
             password: newPassword,
             email: newEmail
         });
-        await showAlert("従業員情報を更新しました。");
+        await showAlert('従業員情報を更新しました。');
         loadEmployeesForSelection(); // リスト更新
         // タイトルも更新
         document.getElementById('detail-emp-title').textContent = `${newName} (${currentDetailEmpId})`;
     } catch (error) {
-        console.error("Update error:", error);
+        console.error('Update error:', error);
         await showAlert("更新エラー: " + error.message);
     }
 });
@@ -999,12 +999,12 @@ document.getElementById('btn-detail-delete').addEventListener('click', async () 
     }
 
     try {
-        await db.collection("employees").doc(currentDetailEmpId).delete();
-        await showAlert("削除しました。");
+        await db.collection('employees').doc(currentDetailEmpId).delete();
+        await showAlert('削除しました。');
         currentDetailEmpId = null;
         showScreen('admin-employees');
     } catch (error) {
-        console.error("Delete error:", error);
+        console.error('Delete error:', error);
         await showAlert("削除に失敗しました: " + error.message);
     }
 });
@@ -1017,7 +1017,7 @@ document.getElementById('btn-detail-att-load').addEventListener('click', async (
     if (month) {
         loadEmployeeAttendanceDetail(currentDetailEmpId, month);
     } else {
-        await showAlert("月を選択してください。");
+        await showAlert('月を選択してください。');
     }
 });
 
@@ -1034,11 +1034,11 @@ async function loadEmployeeAttendanceDetail(empId, monthStr) {
     const { start, end } = getMonthCycleRange(monthStr);
 
     try {
-        const snapshot = await db.collection("attendance")
-            .where("empId", "==", empId)
-            .where("timestamp", ">=", start)
-            .where("timestamp", "<", end)
-            .orderBy("timestamp", "desc")
+        const snapshot = await db.collection('attendance')
+            .where('empId', "==", empId)
+            .where('timestamp', ">=", start)
+            .where('timestamp', "<", end)
+            .orderBy('timestamp', 'desc')
             .get();
 
         list.innerHTML = "";
@@ -1072,7 +1072,7 @@ async function loadEmployeeAttendanceDetail(empId, monthStr) {
             list.appendChild(div);
         });
     } catch (error) {
-        console.error("Error loading attendance detail:", error);
+        console.error('Error loading attendance detail:', error);
         list.innerHTML = `<p>エラー: ${error.message}</p>`;
     }
 }
@@ -1081,7 +1081,7 @@ async function loadEmployeeAttendanceDetail(empId, monthStr) {
 document.getElementById('btn-detail-att-delete').addEventListener('click', async () => {
     const checkboxes = document.querySelectorAll('.detail-att-checkbox:checked');
     if (checkboxes.length === 0) {
-        await showAlert("削除する打刻データを選択してください。");
+        await showAlert('削除する打刻データを選択してください。');
         return;
     }
 
@@ -1090,11 +1090,11 @@ document.getElementById('btn-detail-att-delete').addEventListener('click', async
     try {
         const batch = db.batch();
         checkboxes.forEach(cb => {
-            batch.delete(db.collection("attendance").doc(cb.value));
+            batch.delete(db.collection('attendance').doc(cb.value));
         });
         await batch.commit();
 
-        await showAlert("削除しました。");
+        await showAlert('削除しました。');
         const month = document.getElementById('detail-att-month-selector').value;
         loadEmployeeAttendanceDetail(currentDetailEmpId, month);
         calculateMonthlyRates(currentDetailEmpId);
@@ -1113,7 +1113,7 @@ document.getElementById('btn-add-att-manual').addEventListener('click', async ()
     const remark = document.getElementById('add-att-remark').value.trim();
 
     if (!dateTimeVal) {
-        await showAlert("日時を選択してください。");
+        await showAlert('日時を選択してください。');
         return;
     }
 
@@ -1124,7 +1124,7 @@ document.getElementById('btn-add-att-manual').addEventListener('click', async ()
     const empName = emp ? emp.name : '';
 
     try {
-        await db.collection("attendance").add({
+        await db.collection('attendance').add({
             empId: currentDetailEmpId,
             empName: empName,
             type: type,
@@ -1133,7 +1133,7 @@ document.getElementById('btn-add-att-manual').addEventListener('click', async ()
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
 
-        await showAlert("打刻を追加しました。");
+        await showAlert('打刻を追加しました。');
         // フォームのリセット
         document.getElementById('add-att-datetime').value = '';
         document.getElementById('add-att-remark').value = '';
@@ -1147,7 +1147,7 @@ document.getElementById('btn-add-att-manual').addEventListener('click', async ()
         // 出勤率も再計算
         calculateMonthlyRates(currentDetailEmpId);
     } catch (error) {
-        console.error("Manual add error:", error);
+        console.error('Manual add error:', error);
         await showAlert("追加に失敗しました: " + error.message);
     }
 });
@@ -1185,9 +1185,9 @@ function loadEmployeePendingApplications(empId) {
     if (!container) return;
 
     // 通常の申請を監視
-    db.collection("applications")
-        .where("empId", "==", empId)
-        .orderBy("createdAt", "desc")
+    db.collection('applications')
+        .where('empId', "==", empId)
+        .orderBy('createdAt', 'desc')
         .onSnapshot((snapshot) => {
             // 通常申請のHTML生成
             const pending = snapshot.docs.filter(doc => doc.data().status !== 'completed');
@@ -1195,10 +1195,10 @@ function loadEmployeePendingApplications(empId) {
         });
 
     // 打刻修正申請もリアルタイム監視
-    db.collection("stampCorrections")
-        .where("empId", "==", empId)
-        .where("status", "==", "pending")
-        .orderBy("createdAt", "desc")
+    db.collection('stampCorrections')
+        .where('empId', "==", empId)
+        .where('status', "==", 'pending')
+        .orderBy('createdAt', 'desc')
         .onSnapshot((corrSnapshot) => {
             // 既存の打刻修正セクションを削除
             const oldSection = container.querySelector('.stamp-correction-section');
@@ -1301,12 +1301,12 @@ function loadEmployeeCompletedApplications(empId, filterType, filterValue) {
         end = filterValue + "-12-31";
     }
 
-    db.collection("applications")
-        .where("empId", "==", empId)
-        .where("status", "==", "completed")
-        .where("date", ">=", start)
-        .where("date", "<=", end)
-        .orderBy("date", "desc")
+    db.collection('applications')
+        .where('empId', "==", empId)
+        .where('status', "==", 'completed')
+        .where('date', ">=", start)
+        .where('date', "<=", end)
+        .orderBy('date', 'desc')
         .get()
         .then((snapshot) => {
             container.innerHTML = "";
@@ -1356,8 +1356,8 @@ function updateDetailYearSelector() {
 
 // 詳細画面からの削除後にリストを更新するためのラッパー
 async function deleteCompletedApplicationForDetail(docId, empId, filterType, filterValue) {
-    if (!(await showConfirm("この申請データを削除しますか？"))) return;
-    db.collection("applications").doc(docId).delete().then(() => {
+    if (!(await showConfirm('この申請データを削除しますか？'))) return;
+    db.collection('applications').doc(docId).delete().then(() => {
         loadEmployeeCompletedApplications(empId, filterType, filterValue);
     });
 }
@@ -1427,9 +1427,9 @@ async function loadEmployeeLeaveManagement(empId) {
 
     try {
         // 1. 付与履歴を取得
-        const grantsSnapshot = await db.collection("leaveGrants")
-            .where("empId", "==", empId)
-            .orderBy("grantDate", "asc")
+        const grantsSnapshot = await db.collection('leaveGrants')
+            .where('empId', "==", empId)
+            .orderBy('grantDate', 'asc')
             .get();
 
         const grants = [];
@@ -1440,9 +1440,9 @@ async function loadEmployeeLeaveManagement(empId) {
         });
 
         // 2. 使用済み申請を取得 (有給・半休、ステータス=completed)
-        const appsSnapshot = await db.collection("applications")
-            .where("empId", "==", empId)
-            .where("status", "==", "completed")
+        const appsSnapshot = await db.collection('applications')
+            .where('empId', "==", empId)
+            .where('status', "==", 'completed')
             .get();
 
         let totalUsedDays = 0;
@@ -1468,7 +1468,7 @@ async function loadEmployeeLeaveManagement(empId) {
         }
 
     } catch (error) {
-        console.error("Leave management load error:", error);
+        console.error('Leave management load error:', error);
         tableBody.innerHTML = '<tr><td colspan="5" style="color:red; text-align:center;">読み込み失敗</td></tr>';
     }
 }
@@ -1526,14 +1526,14 @@ document.getElementById('btn-grant-leave').addEventListener('click', async () =>
 
     if (!currentDetailEmpId) return;
     if (!date || isNaN(amount)) {
-        await showAlert("日付と日数を入力してください。");
+        await showAlert('日付と日数を入力してください。');
         return;
     }
 
     if (!(await showConfirm(`${amount} 日の有給を付与しますか？`))) return;
 
     try {
-        await db.collection("leaveGrants").add({
+        await db.collection('leaveGrants').add({
             empId: currentDetailEmpId,
             grantDate: date,
             amount: amount,
@@ -1555,10 +1555,10 @@ document.getElementById('btn-grant-leave').addEventListener('click', async () =>
 
 // 付与履歴の削除
 async function deleteLeaveGrant(grantId, empId) {
-    if (!(await showConfirm("この付与データを削除しますか？\n(残日数が再計算されます)"))) return;
+    if (!(await showConfirm('この付与データを削除しますか？\n(残日数が再計算されます)'))) return;
 
     try {
-        await db.collection("leaveGrants").doc(grantId).delete();
+        await db.collection('leaveGrants').doc(grantId).delete();
         loadEmployeeLeaveManagement(empId);
     } catch (error) {
         await showAlert("削除に失敗しました: " + error.message);
@@ -1603,7 +1603,7 @@ async function calculateAllEmployeeRates() {
 
     try {
         // 休日データ取得
-        const holidaysSnapshot = await db.collection("holidays").get();
+        const holidaysSnapshot = await db.collection('holidays').get();
         const holidaySet = new Set();
         holidaysSnapshot.forEach(doc => { holidaySet.add(doc.id); });
 
@@ -1642,9 +1642,9 @@ async function calculateAllEmployeeRates() {
 
         // 全従業員のデータを並列取得
         const results = await Promise.all(visibleEmployees.map(async (emp) => {
-            const attSnapshot = await db.collection("attendance")
-                .where("empId", "==", emp.id)
-                .where("type", "==", "in")
+            const attSnapshot = await db.collection('attendance')
+                .where('empId', "==", emp.id)
+                .where('type', "==", 'in')
                 .get();
 
             const attendedDays = new Set();
@@ -1655,9 +1655,9 @@ async function calculateAllEmployeeRates() {
                 }
             });
 
-            const appsSnapshot = await db.collection("applications")
-                .where("empId", "==", emp.id)
-                .where("status", "==", "completed")
+            const appsSnapshot = await db.collection('applications')
+                .where('empId', "==", emp.id)
+                .where('status', "==", 'completed')
                 .get();
 
             const paidLeaveDays = new Map();
@@ -1717,7 +1717,7 @@ async function calculateAllEmployeeRates() {
         container.innerHTML = html;
 
     } catch (error) {
-        console.error("Rate overview error:", error);
+        console.error('Rate overview error:', error);
         container.innerHTML = `<p class="loading-text" style="color: #d9534f;">エラー: ${error.message}</p>`;
     }
 }
@@ -1800,7 +1800,7 @@ async function checkAdminLock() {
     }
 
     try {
-        const doc = await db.collection("system").doc("lockStatus").get();
+        const doc = await db.collection('system').doc('lockStatus').get();
         const currentYear = getCurrentYearStr();
 
         if (doc.exists && doc.data().lastUnlockedYear === currentYear) {
@@ -1815,7 +1815,7 @@ async function checkAdminLock() {
             return true;
         }
     } catch (error) {
-        console.error("Lock check error:", error);
+        console.error('Lock check error:', error);
         isAdminUnlocked = false;
         toggleLockOverlay(true);
         return true;
@@ -1863,14 +1863,14 @@ function handleGlobalKey(e) {
 async function unlockAdmin() {
     try {
         const currentYear = getCurrentYearStr();
-        await db.collection("system").doc("lockStatus").set({
+        await db.collection('system').doc('lockStatus').set({
             lastUnlockedYear: currentYear,
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         });
 
         isAdminUnlocked = true;
         toggleLockOverlay(false);
-        await showAlert("システムロックを解除しました。");
+        await showAlert('システムロックを解除しました。');
     } catch (error) {
         await showAlert("解除に失敗しました: " + error.message);
     }
@@ -1880,14 +1880,14 @@ async function unlockAdmin() {
 async function relockAdmin() {
     try {
         // 解除年月をクリアしてロック状態にする
-        await db.collection("system").doc("lockStatus").set({
+        await db.collection('system').doc('lockStatus').set({
             lastUnlockedYear: "LOCKED",
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         });
 
         isAdminUnlocked = false;
         toggleLockOverlay(true);
-        await showAlert("システムを再ロックしました。");
+        await showAlert('システムを再ロックしました。');
     } catch (error) {
         await showAlert("再ロックに失敗しました: " + error.message);
     }
@@ -2050,9 +2050,9 @@ function loadStampCorrections() {
     if (correctionCompletedUnsubscribe) correctionCompletedUnsubscribe();
 
     // 未処理申請リスナー
-    correctionUnsubscribe = db.collection("stampCorrections")
-        .where("status", "==", "pending")
-        .orderBy("createdAt", "desc")
+    correctionUnsubscribe = db.collection('stampCorrections')
+        .where('status', "==", 'pending')
+        .orderBy('createdAt', 'desc')
         .onSnapshot(snapshot => {
             pendingList.innerHTML = '';
 
@@ -2068,14 +2068,14 @@ function loadStampCorrections() {
             // バッジ更新
             updateCorrectionBadge(snapshot.size);
         }, error => {
-            console.error("Error loading corrections:", error);
+            console.error('Error loading corrections:', error);
             pendingList.innerHTML = '<p style="color: var(--danger-color);">読み込みエラー</p>';
         });
 
     // 処理済み申請リスナー（最新20件）
-    correctionCompletedUnsubscribe = db.collection("stampCorrections")
-        .where("status", "in", ["completed", "rejected"])
-        .orderBy("updatedAt", "desc")
+    correctionCompletedUnsubscribe = db.collection('stampCorrections')
+        .where('status', "in", ["completed", "rejected"])
+        .orderBy('updatedAt', 'desc')
         .limit(20)
         .onSnapshot(snapshot => {
             completedList.innerHTML = '';
@@ -2089,7 +2089,7 @@ function loadStampCorrections() {
                 });
             }
         }, error => {
-            console.error("Error loading completed corrections:", error);
+            console.error('Error loading completed corrections:', error);
             completedList.innerHTML = '<p style="color: var(--danger-color);">読み込みエラー</p>';
         });
 }
@@ -2140,38 +2140,38 @@ function renderCorrectionCard(container, docId, data, isCompleted) {
 
 // 修正申請を承認 → 打刻データ削除
 async function approveStampCorrection(correctionDocId, attendanceDocId) {
-    if (!(await showConfirm("この修正申請を承認しますか？\n承認すると該当の打刻データが自動的に削除されます。"))) return;
+    if (!(await showConfirm('この修正申請を承認しますか？\n承認すると該当の打刻データが自動的に削除されます。'))) return;
 
     try {
         // 打刻データを削除
-        await db.collection("attendance").doc(attendanceDocId).delete();
+        await db.collection('attendance').doc(attendanceDocId).delete();
 
         // 申請ステータスを更新
-        await db.collection("stampCorrections").doc(correctionDocId).update({
+        await db.collection('stampCorrections').doc(correctionDocId).update({
             status: 'completed',
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         });
 
-        await showAlert("承認しました。打刻データを削除しました。");
+        await showAlert('承認しました。打刻データを削除しました。');
     } catch (error) {
-        console.error("Approve correction error:", error);
+        console.error('Approve correction error:', error);
         await showAlert("承認処理に失敗しました: " + error.message);
     }
 }
 
 // 修正申請を却下
 async function rejectStampCorrection(correctionDocId) {
-    if (!(await showConfirm("この修正申請を却下しますか？"))) return;
+    if (!(await showConfirm('この修正申請を却下しますか？'))) return;
 
     try {
-        await db.collection("stampCorrections").doc(correctionDocId).update({
+        await db.collection('stampCorrections').doc(correctionDocId).update({
             status: 'rejected',
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         });
 
-        await showAlert("申請を却下しました。");
+        await showAlert('申請を却下しました。');
     } catch (error) {
-        console.error("Reject correction error:", error);
+        console.error('Reject correction error:', error);
         await showAlert("却下処理に失敗しました: " + error.message);
     }
 }
@@ -2191,12 +2191,12 @@ function updateCorrectionBadge(count) {
 
 // 管理者画面の打刻データ管理に遷移した時、未処理件数を表示するためのリスナーを起動
 function initCorrectionBadgeListener() {
-    db.collection("stampCorrections")
-        .where("status", "==", "pending")
+    db.collection('stampCorrections')
+        .where('status', "==", 'pending')
         .onSnapshot(snapshot => {
             updateCorrectionBadge(snapshot.size);
         }, error => {
-            console.error("Badge listener error:", error);
+            console.error('Badge listener error:', error);
         });
 }
 
@@ -2229,9 +2229,9 @@ async function loadDetailMissingCheckoutAlert(empId) {
 
     try {
         // 該当従業員の全打刻データを取得
-        const snapshot = await db.collection("attendance")
-            .where("empId", "==", empId)
-            .orderBy("timestamp", "asc")
+        const snapshot = await db.collection('attendance')
+            .where('empId', "==", empId)
+            .orderBy('timestamp', 'asc')
             .get();
 
         if (snapshot.empty) return;
@@ -2284,7 +2284,7 @@ async function loadDetailMissingCheckoutAlert(empId) {
             list.appendChild(item);
         });
     } catch (error) {
-        console.error("Detail missing checkout alert error:", error);
+        console.error('Detail missing checkout alert error:', error);
     }
 }
 
@@ -2300,10 +2300,10 @@ function loadMissingCheckoutAlert() {
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
 
-    const unsub = db.collection("attendance")
-        .where("timestamp", ">=", yesterday)
-        .where("timestamp", "<", today)
-        .orderBy("timestamp", "asc")
+    const unsub = db.collection('attendance')
+        .where('timestamp', ">=", yesterday)
+        .where('timestamp', "<", today)
+        .orderBy('timestamp', 'asc')
         .onSnapshot(snapshot => {
             // 従業員ごとの最終打刻状態を集計
             const lastState = {};
@@ -2343,7 +2343,7 @@ function loadMissingCheckoutAlert() {
                 card.classList.add('hidden');
             }
         }, error => {
-            console.error("Missing checkout alert error:", error);
+            console.error('Missing checkout alert error:', error);
         });
 
     alertUnsubscribers.push(unsub);
@@ -2356,9 +2356,9 @@ function loadPendingAppsAlert() {
     const badge = document.getElementById('alert-pending-badge');
     if (!card) return;
 
-    const unsub = db.collection("applications")
-        .where("status", "==", "pending")
-        .orderBy("createdAt", "desc")
+    const unsub = db.collection('applications')
+        .where('status', "==", 'pending')
+        .orderBy('createdAt', 'desc')
         .onSnapshot(snapshot => {
             if (!snapshot.empty) {
                 card.classList.remove('hidden');
@@ -2381,7 +2381,7 @@ function loadPendingAppsAlert() {
                 card.classList.add('hidden');
             }
         }, error => {
-            console.error("Pending apps alert error:", error);
+            console.error('Pending apps alert error:', error);
         });
 
     alertUnsubscribers.push(unsub);
@@ -2394,9 +2394,9 @@ function loadPendingCorrectionsAlert() {
     const badge = document.getElementById('alert-correction-badge');
     if (!card) return;
 
-    const unsub = db.collection("stampCorrections")
-        .where("status", "==", "pending")
-        .orderBy("createdAt", "desc")
+    const unsub = db.collection('stampCorrections')
+        .where('status', "==", 'pending')
+        .orderBy('createdAt', 'desc')
         .onSnapshot(snapshot => {
             if (!snapshot.empty) {
                 card.classList.remove('hidden');
@@ -2424,7 +2424,7 @@ function loadPendingCorrectionsAlert() {
                 card.classList.add('hidden');
             }
         }, error => {
-            console.error("Pending corrections alert error:", error);
+            console.error('Pending corrections alert error:', error);
         });
 
     alertUnsubscribers.push(unsub);
@@ -2464,12 +2464,12 @@ async function loadErrorLogs() {
     countEl.textContent = '';
 
     try {
-        let query = db.collection("errorLogs").orderBy("timestamp", "desc").limit(100);
+        let query = db.collection('errorLogs').orderBy('timestamp', 'desc').limit(100);
 
         if (filterVal === 'unresolved') {
-            query = query.where("resolved", "==", false);
+            query = query.where('resolved', "==", false);
         } else if (filterVal === 'resolved') {
-            query = query.where("resolved", "==", true);
+            query = query.where('resolved', "==", true);
         }
 
         const snapshot = await query.get();
@@ -2530,7 +2530,7 @@ async function loadErrorLogs() {
         });
 
     } catch (error) {
-        console.error("Error loading error logs:", error);
+        console.error('Error loading error logs:', error);
         listEl.innerHTML = `<p style="color: var(--danger-color);">エラーログの読み込みに失敗しました: ${error.message}</p>`;
     }
 }
@@ -2553,25 +2553,25 @@ function toggleErrorDetail(docId) {
 // エラーを解決済みにマーク
 async function markErrorResolved(docId) {
     try {
-        await db.collection("errorLogs").doc(docId).update({
+        await db.collection('errorLogs').doc(docId).update({
             resolved: true,
             resolvedAt: firebase.firestore.FieldValue.serverTimestamp()
         });
         loadErrorLogs(); // リスト再読み込み
     } catch (error) {
-        console.error("Mark resolved error:", error);
+        console.error('Mark resolved error:', error);
         await showAlert("更新に失敗しました: " + error.message);
     }
 }
 
 // 解決済みエラーを一括削除
 document.getElementById('btn-delete-resolved-logs').addEventListener('click', async () => {
-    const snapshot = await db.collection("errorLogs")
-        .where("resolved", "==", true)
+    const snapshot = await db.collection('errorLogs')
+        .where('resolved', "==", true)
         .get();
 
     if (snapshot.empty) {
-        await showAlert("削除対象の解決済みログはありません。");
+        await showAlert('削除対象の解決済みログはありません。');
         return;
     }
 
@@ -2586,7 +2586,7 @@ document.getElementById('btn-delete-resolved-logs').addEventListener('click', as
         await showAlert(`${snapshot.size} 件を削除しました。`);
         loadErrorLogs();
     } catch (error) {
-        console.error("Delete resolved logs error:", error);
+        console.error('Delete resolved logs error:', error);
         await showAlert("削除に失敗しました: " + error.message);
     }
 });

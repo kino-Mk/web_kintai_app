@@ -26,10 +26,10 @@ const hostname = window.location.hostname;
 let configToUse;
 
 if (hostname === "localhost" || hostname === "127.0.0.1") {
-    console.log("Environment: Development (Test)");
+    console.log('Environment: Development (Test)');
     configToUse = firebaseConfigDev;
 } else {
-    console.log("Environment: Production");
+    console.log('Environment: Production');
     configToUse = firebaseConfigProd;
 }
 

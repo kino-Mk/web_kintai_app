@@ -267,7 +267,7 @@ function reportError(error, context = '') {
         } catch (_) { /* 無視 */ }
 
         // Firestoreに保存（バックグラウンド、失敗しても影響なし）
-        db.collection("errorLogs").add({
+        db.collection('errorLogs').add({
             message: message,
             stack: stack.substring(0, 2000), // スタックトレースは2000文字まで
             context: context,

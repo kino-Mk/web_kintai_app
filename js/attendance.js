@@ -17,9 +17,9 @@ function initAttendanceTracker() {
     const start = getStartOfToday();
 
     // 従業員の最新の打刻状態を取得
-    db.collection("attendance")
-        .where("timestamp", ">=", start)
-        .orderBy("timestamp", "asc") // 古い順に処理して最終状態を残す
+    db.collection('attendance')
+        .where('timestamp', ">=", start)
+        .orderBy('timestamp', 'asc') // 古い順に処理して最終状態を残す
         .onSnapshot((snapshot) => {
             currentDayAttendanceStates = {}; // リセット
             snapshot.forEach(doc => {
@@ -33,7 +33,7 @@ function initAttendanceTracker() {
                 renderEmployeeSelection();
             }
         }, (error) => {
-            console.error("Attendance Tracker Error:", error);
+            console.error('Attendance Tracker Error:', error);
         });
 }
 
@@ -55,13 +55,13 @@ function switchSelectionTab(tab) {
 
 async function handleStamp(type) {
     if (!currentEmployee) {
-        await showAlert("従業員が選択されていません");
+        await showAlert('従業員が選択されていません');
         return;
     }
 
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     if (isMobile) {
-        await showAlert("スマートフォンからの打刻は許可されていません。");
+        await showAlert('スマートフォンからの打刻は許可されていません。');
         return;
     }
 
@@ -69,20 +69,20 @@ async function handleStamp(type) {
 
     if (type === 'in') {
         if (currentState === 'in') {
-            await showAlert("既に出勤打刻済みです。");
+            await showAlert('既に出勤打刻済みです。');
             return;
         }
         if (currentState === 'out') {
-            await showAlert("本日は既に退勤済みです。");
+            await showAlert('本日は既に退勤済みです。');
             return;
         }
     } else if (type === 'out') {
         if (currentState === 'out') {
-            await showAlert("既に退勤打刻済みです。");
+            await showAlert('既に退勤打刻済みです。');
             return;
         }
         if (!currentState) {
-            await showAlert("出勤打刻がされていません。");
+            await showAlert('出勤打刻がされていません。');
             return;
         }
     }
@@ -91,7 +91,7 @@ async function handleStamp(type) {
     if (!(await showConfirm(confirmMsg))) return;
 
     try {
-        await db.collection("attendance").add({
+        await db.collection('attendance').add({
             empId: currentEmployee.id,
             empName: currentEmployee.name,
             type: type,
@@ -101,7 +101,7 @@ async function handleStamp(type) {
         await showAlert(type === 'in' ? "出勤しました" : "退勤しました");
         showScreen('selection');
     } catch (error) {
-        console.error("Error stamping:", error);
+        console.error('Error stamping:', error);
         await showAlert("打刻に失敗しました: " + error.message);
     }
 }
@@ -114,7 +114,7 @@ document.getElementById('btn-clock-out').addEventListener('click', () => handleS
 
 document.getElementById('btn-submit-application').addEventListener('click', async () => {
     if (!currentEmployee) {
-        await showAlert("従業員が選択されていません");
+        await showAlert('従業員が選択されていません');
         return;
     }
 
@@ -134,24 +134,24 @@ document.getElementById('btn-submit-application').addEventListener('click', asyn
 
         if (type === '残業' || type === '早退') {
             if (!endTime) {
-                await showAlert("退勤時刻を入力してください。");
+                await showAlert('退勤時刻を入力してください。');
                 return;
             }
         } else if (type === '遅刻') {
             if (!startTime) {
-                await showAlert("出勤時刻を入力してください。");
+                await showAlert('出勤時刻を入力してください。');
                 return;
             }
         } else {
             if (!startTime || !endTime) {
-                await showAlert("出勤時刻と退勤時刻の両方を入力してください。");
+                await showAlert('出勤時刻と退勤時刻の両方を入力してください。');
                 return;
             }
         }
     }
 
     if (!date) {
-        await showAlert("日付を選択してください");
+        await showAlert('日付を選択してください');
         return;
     }
 
@@ -178,7 +178,7 @@ document.getElementById('btn-submit-application').addEventListener('click', asyn
     }
 
     try {
-        await db.collection("applications").add(applicationData);
+        await db.collection('applications').add(applicationData);
 
         // メール通知（バックグラウンド）
         sendNotificationEmail({
@@ -190,13 +190,13 @@ document.getElementById('btn-submit-application').addEventListener('click', asyn
             reason: reason
         });
 
-        await showAlert("申請しました");
+        await showAlert('申請しました');
         document.getElementById('application-reason').value = "";
         document.getElementById('application-start-time').value = "";
         document.getElementById('application-end-time').value = "";
         showScreen('selection');
     } catch (error) {
-        console.error("Error submitting application:", error);
+        console.error('Error submitting application:', error);
         await showAlert("申請に失敗しました: " + error.message);
     }
 });
@@ -257,9 +257,9 @@ async function updatePaidLeaveDisplay(empId) {
 
     try {
         // 1. 付与履歴を取得
-        const grantsSnapshot = await db.collection("leaveGrants")
-            .where("empId", "==", empId)
-            .orderBy("grantDate", "asc")
+        const grantsSnapshot = await db.collection('leaveGrants')
+            .where('empId', "==", empId)
+            .orderBy('grantDate', 'asc')
             .get();
 
         const grants = [];
@@ -269,9 +269,9 @@ async function updatePaidLeaveDisplay(empId) {
         });
 
         // 2. 使用済み申請を取得 (有給・半休、ステータス=completed)
-        const appsSnapshot = await db.collection("applications")
-            .where("empId", "==", empId)
-            .where("status", "==", "completed")
+        const appsSnapshot = await db.collection('applications')
+            .where('empId', "==", empId)
+            .where('status', "==", 'completed')
             .get();
 
         let totalUsedDays = 0;
@@ -291,7 +291,7 @@ async function updatePaidLeaveDisplay(empId) {
         }
 
     } catch (error) {
-        console.error("Error fetching paid leave details:", error);
+        console.error('Error fetching paid leave details:', error);
         infoDiv.textContent = "残日数読み込みエラー";
     }
 }
@@ -303,9 +303,9 @@ function loadTodayHistoryAll() {
 
     const start = getStartOfToday();
 
-    db.collection("attendance")
-        .where("timestamp", ">=", start)
-        .orderBy("timestamp", "desc")
+    db.collection('attendance')
+        .where('timestamp', ">=", start)
+        .orderBy('timestamp', 'desc')
         .limit(20) // 最新20件
         .onSnapshot((snapshot) => {
             list.innerHTML = "";
@@ -319,7 +319,7 @@ function loadTodayHistoryAll() {
                 renderHistoryItem(list, data, true); // true = show name
             });
         }, (error) => {
-            console.error("Error loading all history:", error);
+            console.error('Error loading all history:', error);
             list.innerHTML = "<li>読み込みエラー</li>";
         });
 }
@@ -331,10 +331,10 @@ function loadTodayHistoryPersonal(empId) {
 
     const start = getStartOfToday();
 
-    db.collection("attendance")
-        .where("empId", "==", empId)
-        .where("timestamp", ">=", start)
-        .orderBy("timestamp", "desc")
+    db.collection('attendance')
+        .where('empId', "==", empId)
+        .where('timestamp', ">=", start)
+        .orderBy('timestamp', 'desc')
         .onSnapshot((snapshot) => {
             list.innerHTML = "";
             if (snapshot.empty) {
@@ -347,7 +347,7 @@ function loadTodayHistoryPersonal(empId) {
                 renderHistoryItem(list, data, false); // false = hide name (already known)
             });
         }, (error) => {
-            console.error("Error loading personal history:", error);
+            console.error('Error loading personal history:', error);
             list.innerHTML = "<li>読み込みエラー: インデックスが必要な可能性があります</li>";
             // 複合クエリ (empId + timestamp range) はFirestoreでインデックスが必要になる場合があります
             // コンソールにリンクが表示されるので作成してください
@@ -427,9 +427,9 @@ async function openStampCorrectionModal() {
     try {
         // 当日の全打刻データを取得
         const start = getStartOfToday();
-        const snapshot = await db.collection("attendance")
-            .where("timestamp", ">=", start)
-            .orderBy("timestamp", "asc")
+        const snapshot = await db.collection('attendance')
+            .where('timestamp', ">=", start)
+            .orderBy('timestamp', 'asc')
             .get();
 
         listContainer.innerHTML = '';
@@ -482,7 +482,7 @@ async function openStampCorrectionModal() {
             });
         });
     } catch (error) {
-        console.error("Error loading stamps for correction:", error);
+        console.error('Error loading stamps for correction:', error);
         listContainer.innerHTML = '<p style="color: var(--danger-color);">読み込みに失敗しました</p>';
     }
 }
@@ -496,7 +496,7 @@ document.getElementById('btn-correction-cancel').addEventListener('click', () =>
 document.getElementById('btn-correction-submit').addEventListener('click', async () => {
     const checkboxes = document.querySelectorAll('.correction-checkbox:checked');
     if (checkboxes.length === 0) {
-        await showAlert("削除したい打刻を選択してください。");
+        await showAlert('削除したい打刻を選択してください。');
         return;
     }
 
@@ -508,7 +508,7 @@ document.getElementById('btn-correction-submit').addEventListener('click', async
         const batch = db.batch();
 
         checkboxes.forEach(cb => {
-            const docRef = db.collection("stampCorrections").doc();
+            const docRef = db.collection('stampCorrections').doc();
             batch.set(docRef, {
                 empId: cb.dataset.empId,
                 empName: cb.dataset.empName,
@@ -537,10 +537,10 @@ document.getElementById('btn-correction-submit').addEventListener('click', async
             details: details
         });
 
-        await showAlert("打刻修正申請を送信しました。管理者の承認をお待ちください。");
+        await showAlert('打刻修正申請を送信しました。管理者の承認をお待ちください。');
         document.getElementById('stamp-correction-modal').classList.add('hidden');
     } catch (error) {
-        console.error("Stamp correction request error:", error);
+        console.error('Stamp correction request error:', error);
         await showAlert("申請に失敗しました: " + error.message);
     }
 });
