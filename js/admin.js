@@ -2476,7 +2476,7 @@ async function loadErrorLogs() {
         listEl.innerHTML = '';
 
         if (snapshot.empty) {
-            listEl.innerHTML = '<p style="color: #888; text-align: center; padding: 20px;">エラーログはありません 🎉</p>';
+            listEl.innerHTML = '<p style="color: #888; text-align: center; padding: 20px;">エラーログはありません</p>';
             countEl.textContent = '';
             return;
         }
