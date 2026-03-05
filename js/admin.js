@@ -2340,9 +2340,9 @@ function loadMissingCheckoutAlert() {
                         <span class="alert-item-name">${emp.name}</span>
                         <span class="alert-item-detail">出勤: ${formatTime(emp.time)} — 退勤未打刻</span>
                     `;
-                    // クリックで打刻データ管理画面へ遷移
+                    // クリックで該当従業員の詳細画面へ遷移
                     item.addEventListener('click', () => {
-                        showScreen('admin-attendance');
+                        openEmployeeDetail(emp.empId);
                     });
                     list.appendChild(item);
                 });
