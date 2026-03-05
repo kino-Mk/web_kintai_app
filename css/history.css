@@ -1,0 +1,47 @@
+/* History List Styles */
+.history-section {
+    margin-top: 20px;
+    padding: 10px;
+    background: #f9f9f9;
+    border-radius: var(--border-radius);
+    border: 1px solid #eee;
+}
+
+.history-section h3 {
+    font-size: 1rem;
+    margin-bottom: 10px;
+    color: var(--secondary-color);
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 5px;
+}
+
+.history-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.history-list li {
+    padding: 8px;
+    border-bottom: 1px solid #eee;
+    font-size: 0.9rem;
+    display: flex;
+    justify-content: space-between;
+}
+
+.history-list li:last-child {
+    border-bottom: none;
+}
+
+/* Status Colors */
+.status-in {
+    color: var(--success-color);
+    font-weight: bold;
+}
+
+.status-out {
+    color: var(--danger-color);
+    font-weight: bold;
+}

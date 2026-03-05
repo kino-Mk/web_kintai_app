@@ -1,0 +1,47 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 従業員データ (employees)
+    match /employees/{employeeId} {
+      allow read, write: if true;
+    }
+
+    // 打刻データ (attendance)
+    match /attendance/{docId} {
+      // 閲覧、作成、更新（備考編集など）、削除をすべて許可
+      allow read, create, update, delete: if true;
+    }
+
+    // 申請データ (applications)
+    match /applications/{applicationId} {
+      allow read, write: if true;
+      allow delete: if true;
+    }
+
+    // 休日カレンダーデータ (holidays)
+    match /holidays/{dateString} {
+      allow read, write: if true;
+    }
+
+    // 有給付与履歴 (今回追加)
+    match /leaveGrants/{grantId} {
+      allow read, write: if true;
+    }
+
+    // システム設定 (追加)
+    match /system/{docId} {
+      allow read, write: if true;
+    }
+
+    // パスワードリセットトークン
+    match /passwordResetTokens/{tokenId} {
+      allow read, write: if true;
+    }
+
+    // 打刻修正申請
+    match /stampCorrections/{correctionId} {
+      allow read, write: if true;
+    }
+  }
+}
