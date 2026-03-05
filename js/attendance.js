@@ -223,6 +223,11 @@ function onScreenChanged(screenId) {
         loadTodayHistoryPersonal(currentEmployee.id);
     } else if (screenId === 'application' && currentEmployee) {
         updatePaidLeaveDisplay(currentEmployee.id);
+    } else if (screenId === 'admin') {
+        // 管理者ダッシュボードのアラート読み込み
+        if (typeof loadAdminAlerts === 'function') {
+            loadAdminAlerts();
+        }
     }
 }
 

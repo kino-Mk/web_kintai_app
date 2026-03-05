@@ -720,3 +720,85 @@ label {
     opacity: 0.7;
     background: var(--background-color);
 }
+
+/* 管理者アラートパネル */
+.admin-alerts-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.alert-card {
+    border-radius: var(--border-radius);
+    padding: 12px 15px;
+    box-shadow: var(--shadow-sm);
+}
+
+.alert-card.alert-warning {
+    background: #fff8e1;
+    border-left: 4px solid #f9a825;
+}
+
+.alert-card.alert-info {
+    background: #e3f2fd;
+    border-left: 4px solid #1976d2;
+}
+
+.alert-card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.alert-icon {
+    font-size: 1.2rem;
+}
+
+.alert-title {
+    font-weight: 700;
+    font-size: 0.9rem;
+    flex: 1;
+}
+
+.alert-badge {
+    background: var(--danger-color);
+    color: #fff;
+    border-radius: 50%;
+    min-width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.alert-card-body {
+    margin-top: 8px;
+    font-size: 0.85rem;
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+.alert-item {
+    padding: 6px 8px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.alert-item:last-child {
+    border-bottom: none;
+}
+
+.alert-item-name {
+    font-weight: 600;
+}
+
+.alert-item-detail {
+    color: #666;
+    font-size: 0.8rem;
+}

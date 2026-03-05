@@ -2281,3 +2281,149 @@ function initCorrectionBadgeListener() {
 // 管理者モード時にバッジリスナーを起動
 initCorrectionBadgeListener();
 
+// --- 管理者ダッシュボード アラート＆通知 ---
+
+let alertUnsubscribers = [];
+
+function loadAdminAlerts() {
+    // 既存リスナーを解除
+    alertUnsubscribers.forEach(unsub => unsub());
+    alertUnsubscribers = [];
+
+    loadMissingCheckoutAlert();
+    loadPendingAppsAlert();
+    loadPendingCorrectionsAlert();
+}
+
+// 打刻漏れ検出（最終打刻が「出勤」のままの従業員）
+function loadMissingCheckoutAlert() {
+    const card = document.getElementById('alert-missing-checkout');
+    const list = document.getElementById('alert-missing-list');
+    const badge = document.getElementById('alert-missing-badge');
+    if (!card) return;
+
+    const start = getStartOfToday();
+
+    const unsub = db.collection("attendance")
+        .where("timestamp", ">=", start)
+        .orderBy("timestamp", "asc")
+        .onSnapshot(snapshot => {
+            // 従業員ごとの最終打刻状態を集計
+            const lastState = {};
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                lastState[data.empId] = {
+                    type: data.type,
+                    name: data.empName || data.empId,
+                    time: toDate(data.timestamp)
+                };
+            });
+
+            // 最終打刻が「出勤」のままの従業員を抽出
+            const missing = Object.entries(lastState)
+                .filter(([, info]) => info.type === 'in')
+                .map(([empId, info]) => ({ empId, ...info }));
+
+            if (missing.length > 0) {
+                card.classList.remove('hidden');
+                badge.textContent = missing.length;
+                list.innerHTML = '';
+                missing.forEach(emp => {
+                    const item = document.createElement('div');
+                    item.className = 'alert-item';
+                    item.innerHTML = `
+                        <span class="alert-item-name">${emp.name}</span>
+                        <span class="alert-item-detail">出勤: ${formatTime(emp.time)} — 退勤未打刻</span>
+                    `;
+                    list.appendChild(item);
+                });
+            } else {
+                card.classList.add('hidden');
+            }
+        }, error => {
+            console.error("Missing checkout alert error:", error);
+        });
+
+    alertUnsubscribers.push(unsub);
+}
+
+// 未処理の勤怠申請通知
+function loadPendingAppsAlert() {
+    const card = document.getElementById('alert-pending-apps');
+    const list = document.getElementById('alert-pending-list');
+    const badge = document.getElementById('alert-pending-badge');
+    if (!card) return;
+
+    const unsub = db.collection("applications")
+        .where("status", "==", "pending")
+        .orderBy("createdAt", "desc")
+        .onSnapshot(snapshot => {
+            if (!snapshot.empty) {
+                card.classList.remove('hidden');
+                badge.textContent = snapshot.size;
+                list.innerHTML = '';
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const item = document.createElement('div');
+                    item.className = 'alert-item';
+                    item.style.cursor = 'pointer';
+                    item.innerHTML = `
+                        <span class="alert-item-name">${data.empName} — ${data.type}</span>
+                        <span class="alert-item-detail">${data.date}</span>
+                    `;
+                    // クリックで従業員詳細へ遷移
+                    item.addEventListener('click', () => openEmployeeDetail(data.empId));
+                    list.appendChild(item);
+                });
+            } else {
+                card.classList.add('hidden');
+            }
+        }, error => {
+            console.error("Pending apps alert error:", error);
+        });
+
+    alertUnsubscribers.push(unsub);
+}
+
+// 未処理の打刻修正申請通知
+function loadPendingCorrectionsAlert() {
+    const card = document.getElementById('alert-pending-corrections');
+    const list = document.getElementById('alert-correction-list');
+    const badge = document.getElementById('alert-correction-badge');
+    if (!card) return;
+
+    const unsub = db.collection("stampCorrections")
+        .where("status", "==", "pending")
+        .orderBy("createdAt", "desc")
+        .onSnapshot(snapshot => {
+            if (!snapshot.empty) {
+                card.classList.remove('hidden');
+                badge.textContent = snapshot.size;
+                list.innerHTML = '';
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const typeLabel = data.attendanceType === 'in' ? '出勤' : '退勤';
+                    const timeStr = formatDateTime(toDate(data.attendanceTime));
+                    const item = document.createElement('div');
+                    item.className = 'alert-item';
+                    item.style.cursor = 'pointer';
+                    item.innerHTML = `
+                        <span class="alert-item-name">${data.empName} — ${typeLabel}</span>
+                        <span class="alert-item-detail">${timeStr}</span>
+                    `;
+                    // クリックで打刻データ管理画面の修正申請タブへ遷移
+                    item.addEventListener('click', () => {
+                        showScreen('admin-attendance');
+                        switchAdminAttTab('corrections');
+                    });
+                    list.appendChild(item);
+                });
+            } else {
+                card.classList.add('hidden');
+            }
+        }, error => {
+            console.error("Pending corrections alert error:", error);
+        });
+
+    alertUnsubscribers.push(unsub);
+}

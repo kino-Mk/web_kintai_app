@@ -53,6 +53,43 @@
         <!-- 画面: 管理者メニュー (ダッシュボード) -->
         <section id="screen-admin" class="screen hidden">
             <h2>管理者メニュー</h2>
+
+            <!-- アラート＆通知パネル -->
+            <div id="admin-alerts-panel" class="admin-alerts-panel">
+                <!-- 打刻漏れアラート -->
+                <div id="alert-missing-checkout" class="alert-card alert-warning hidden">
+                    <div class="alert-card-header">
+                        <span class="alert-icon">⚠️</span>
+                        <span class="alert-title">打刻漏れ</span>
+                        <span id="alert-missing-badge" class="alert-badge">0</span>
+                    </div>
+                    <div id="alert-missing-list" class="alert-card-body">
+                    </div>
+                </div>
+
+                <!-- 未処理申請通知 -->
+                <div id="alert-pending-apps" class="alert-card alert-info hidden">
+                    <div class="alert-card-header">
+                        <span class="alert-icon">📋</span>
+                        <span class="alert-title">未処理の申請</span>
+                        <span id="alert-pending-badge" class="alert-badge">0</span>
+                    </div>
+                    <div id="alert-pending-list" class="alert-card-body">
+                    </div>
+                </div>
+
+                <!-- 未処理打刻修正申請 -->
+                <div id="alert-pending-corrections" class="alert-card alert-info hidden">
+                    <div class="alert-card-header">
+                        <span class="alert-icon">🔧</span>
+                        <span class="alert-title">打刻修正申請</span>
+                        <span id="alert-correction-badge" class="alert-badge">0</span>
+                    </div>
+                    <div id="alert-correction-list" class="alert-card-body">
+                    </div>
+                </div>
+            </div>
+
             <div class="menu-grid">
                 <button class="btn-large btn-primary" onclick="showScreen('admin-employees')">従業員管理 & データ出力</button>
                 <button class="btn-large btn-danger" onclick="showScreen('admin-attendance')">打刻データ管理 (修正・削除)</button>
