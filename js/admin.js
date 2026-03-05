@@ -105,7 +105,7 @@ function renderAdminEmployeeItem(container, emp) {
     `;
 
     // ホバーエフェクト
-    li.addEventListener('mouseenter', () => { li.style.background = '#e9ecef'; });
+    li.addEventListener('mouseenter', () => { li.style.background = 'var(--background-color)'; });
     li.addEventListener('mouseleave', () => { li.style.background = ''; });
 
     // クリックで従業員詳細ページへ遷移
@@ -415,89 +415,9 @@ async function completeApplication(docId) {
 
         // 成功（リアルタイムリスナーが自動で反映）
 
-    } catch (err) {
-        console.error("Complete application error:", err);
-        await showAlert("処理に失敗しました: " + err.message);
-    }
-}
-
-// 編集モード切り替え
-function toggleEditMode(empId) {
-    const row = document.getElementById(`emp-row-${empId}`);
-    if (row) {
-        row.querySelector('.view-mode').style.display = 'none';
-        row.querySelector('.view-mode-controls').style.display = 'none';
-        row.querySelector('.edit-mode').style.display = 'flex';
-    }
-}
-
-function cancelEditMode(empId) {
-    const row = document.getElementById(`emp-row-${empId}`);
-    if (row) {
-        row.querySelector('.view-mode').style.display = 'flex';
-        row.querySelector('.view-mode-controls').style.display = 'flex';
-        row.querySelector('.edit-mode').style.display = 'none';
-
-        // 値をリセット（必要なら）
-        // document.getElementById(`edit-id-${empId}`).value = empId;
-    }
-}
-
-// 従業員情報の保存 (ID変更対応)
-async function saveEmployeeByType(originalId) {
-    const newId = document.getElementById(`edit-id-${originalId}`).value.trim();
-    const newName = document.getElementById(`edit-name-${originalId}`).value.trim();
-    const newLeave = parseFloat(document.getElementById(`edit-leave-${originalId}`).value);
-
-    if (!newId || !newName) {
-        await showAlert("IDと氏名は必須です");
-        return;
-    }
-
-    if (newId === originalId) {
-        // ID変更なし -> Update
-        try {
-            await db.collection("employees").doc(originalId).update({
-                name: newName,
-                paidLeave: newLeave
-            });
-            await showAlert("更新しました");
-            cancelEditMode(originalId);
-        } catch (err) {
-            await showAlert("更新失敗: " + err.message);
-        }
-    } else {
-        // ID変更あり -> Create New & Delete Old
-        if (!(await showConfirm(`IDを ${originalId} から ${newId} に変更します。\n\n【重要】\n過去の打刻データや申請データとの紐付けは失われます。\n（データ自体は残りますが、この従業員の履歴として表示されなくなります）\n\nよろしいですか？`))) {
-            return;
-        }
-
-        const newDocRef = db.collection("employees").doc(newId);
-
-        try {
-            // 重複チェック
-            const doc = await newDocRef.get();
-            if (doc.exists) {
-                await showAlert("指定された新しいIDは既に使用されています。");
-                return;
-            }
-
-            // データコピー
-            const oldDoc = await db.collection("employees").doc(originalId).get();
-            const data = oldDoc.data();
-            data.id = newId;
-            data.name = newName;
-            data.paidLeave = newLeave;
-            // createdAtは維持
-
-            await newDocRef.set(data);
-            // 古いデータを削除
-            await db.collection("employees").doc(originalId).delete();
-            await showAlert("IDを変更して更新しました");
-            // 自動的にリストが再描画される
-        } catch (err) {
-            await showAlert("エラー: " + err.message);
-        }
+    } catch (error) {
+        console.error("Complete application error:", error);
+        await showAlert("処理に失敗しました: " + error.message);
     }
 }
 
@@ -622,9 +542,9 @@ document.getElementById('btn-delete-selected-att').addEventListener('click', asy
         const month = document.getElementById('filter-att-month').value;
         const empId = document.getElementById('filter-att-employee').value;
         loadAdminAttendanceData(month, empId);
-    } catch (err) {
-        console.error("Delete error:", err);
-        await showAlert("削除に失敗しました: " + err.message);
+    } catch (error) {
+        console.error("Delete error:", error);
+        await showAlert("削除に失敗しました: " + error.message);
     }
 });
 
@@ -669,8 +589,8 @@ function renderCalendar(monthStr) {
             msg.style.display = 'none';
             grid.classList.remove('hidden');
         })
-        .catch(err => {
-            console.error("Error loading holidays:", err);
+        .catch(error => {
+            console.error("Error loading holidays:", error);
             msg.textContent = "休日データの読み込みに失敗しました。";
         });
 }
@@ -733,9 +653,9 @@ async function toggleHoliday(dateString, element) {
             });
             element.classList.add('holiday');
         }
-    } catch (err) {
-        console.error("Update error:", err);
-        await showAlert("更新エラー: " + err.message);
+    } catch (error) {
+        console.error("Update error:", error);
+        await showAlert("更新エラー: " + error.message);
     }
 }
 
@@ -797,9 +717,9 @@ async function autoSetHolidays(monthStr) {
             await showAlert("設定対象の日が見つかりませんでした。");
         }
 
-    } catch (err) {
-        console.error("Auto set holidays error:", err);
-        await showAlert("エラーが発生しました: " + err.message);
+    } catch (error) {
+        console.error("Auto set holidays error:", error);
+        await showAlert("エラーが発生しました: " + error.message);
     } finally {
         btn.disabled = false;
         btn.textContent = originalText;
@@ -868,8 +788,8 @@ async function openEmployeeDetail(empId) {
         loadEmployeeLeaveManagement(empId);
 
         switchDetailTab('basic');
-    } catch (err) {
-        console.error("Error loading employee detail:", err);
+    } catch (error) {
+        console.error("Error loading employee detail:", error);
         await showAlert("従業員データの読み込みに失敗しました。");
     }
 }
@@ -1019,8 +939,8 @@ async function calculateMonthlyRates(empId) {
             }
         }
 
-    } catch (err) {
-        console.error("Monthly rate calculation error:", err);
+    } catch (error) {
+        console.error("Monthly rate calculation error:", error);
         const container = document.getElementById('detail-monthly-rates');
         if (container) container.textContent = '月別出勤率の計算に失敗しました。';
     }
@@ -1060,9 +980,9 @@ document.getElementById('btn-detail-save').addEventListener('click', async () =>
         loadEmployeesForSelection(); // リスト更新
         // タイトルも更新
         document.getElementById('detail-emp-title').textContent = `${newName} (${currentDetailEmpId})`;
-    } catch (err) {
-        console.error("Update error:", err);
-        await showAlert("更新エラー: " + err.message);
+    } catch (error) {
+        console.error("Update error:", error);
+        await showAlert("更新エラー: " + error.message);
     }
 });
 
@@ -1082,9 +1002,9 @@ document.getElementById('btn-detail-delete').addEventListener('click', async () 
         await showAlert("削除しました。");
         currentDetailEmpId = null;
         showScreen('admin-employees');
-    } catch (err) {
-        console.error("Delete error:", err);
-        await showAlert("削除に失敗しました: " + err.message);
+    } catch (error) {
+        console.error("Delete error:", error);
+        await showAlert("削除に失敗しました: " + error.message);
     }
 });
 
@@ -1177,8 +1097,8 @@ document.getElementById('btn-detail-att-delete').addEventListener('click', async
         const month = document.getElementById('detail-att-month-selector').value;
         loadEmployeeAttendanceDetail(currentDetailEmpId, month);
         calculateMonthlyRates(currentDetailEmpId);
-    } catch (err) {
-        await showAlert("削除に失敗しました: " + err.message);
+    } catch (error) {
+        await showAlert("削除に失敗しました: " + error.message);
     }
 });
 
@@ -1225,9 +1145,9 @@ document.getElementById('btn-add-att-manual').addEventListener('click', async ()
 
         // 出勤率も再計算
         calculateMonthlyRates(currentDetailEmpId);
-    } catch (err) {
-        console.error("Manual add error:", err);
-        await showAlert("追加に失敗しました: " + err.message);
+    } catch (error) {
+        console.error("Manual add error:", error);
+        await showAlert("追加に失敗しました: " + error.message);
     }
 });
 
@@ -1783,7 +1703,7 @@ async function calculateAllEmployeeRates() {
         </tr></thead><tbody>`;
 
         results.forEach(r => {
-            const rateColor = r.rate >= 80 ? '#28a745' : (r.rate >= 50 ? '#ffc107' : '#dc3545');
+            const rateColor = r.rate >= 80 ? 'var(--success-color)' : (r.rate >= 50 ? 'var(--warning-color)' : 'var(--danger-color)');
             html += `<tr style="border-bottom: 1px solid #eee; cursor: pointer;" onclick="openEmployeeDetail('${r.id}')">
                 <td style="padding: 10px;">${r.id}</td>
                 <td style="padding: 10px;">${r.name}</td>
