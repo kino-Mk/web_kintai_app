@@ -31,6 +31,7 @@ function loadEmployeesForSelection() {
         renderEmployeeSelection();
     }, (error) => {
         console.error("Error loading employees:", error);
+        reportError(error, "従業員一覧読み込み");
     });
 }
 
@@ -2428,3 +2429,164 @@ function loadPendingCorrectionsAlert() {
 
     alertUnsubscribers.push(unsub);
 }
+
+// --- エラーログ管理 ---
+
+// 画面表示時に自動読み込み
+document.getElementById('btn-load-error-logs').addEventListener('click', () => {
+    loadErrorLogs();
+});
+
+// 画面遷移時のフック（既存の onScreenChanged と統合）
+const _originalOnScreenChanged = typeof onScreenChanged === 'function' ? onScreenChanged : null;
+
+// エラーログ画面表示時に自動読み込み（DOMContentLoaded で設定）
+document.addEventListener('DOMContentLoaded', () => {
+    // MutationObserverでエラーログ画面の表示を監視
+    const errorLogScreen = document.getElementById('screen-admin-error-logs');
+    if (errorLogScreen) {
+        const observer = new MutationObserver(() => {
+            if (errorLogScreen.classList.contains('active')) {
+                loadErrorLogs();
+            }
+        });
+        observer.observe(errorLogScreen, { attributes: true, attributeFilter: ['class'] });
+    }
+});
+
+// エラーログ一覧を読み込む
+async function loadErrorLogs() {
+    const listEl = document.getElementById('error-log-list');
+    const countEl = document.getElementById('error-log-count');
+    const filterVal = document.getElementById('error-log-filter').value;
+
+    listEl.innerHTML = '<p class="loading-text">読み込み中...</p>';
+    countEl.textContent = '';
+
+    try {
+        let query = db.collection("errorLogs").orderBy("timestamp", "desc").limit(100);
+
+        if (filterVal === 'unresolved') {
+            query = query.where("resolved", "==", false);
+        } else if (filterVal === 'resolved') {
+            query = query.where("resolved", "==", true);
+        }
+
+        const snapshot = await query.get();
+        listEl.innerHTML = '';
+
+        if (snapshot.empty) {
+            listEl.innerHTML = '<p style="color: #888; text-align: center; padding: 20px;">エラーログはありません 🎉</p>';
+            countEl.textContent = '';
+            return;
+        }
+
+        countEl.textContent = `${snapshot.size} 件のエラーログ（最大100件）`;
+
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            const div = document.createElement('div');
+            div.className = 'error-log-item';
+            div.style.cssText = 'border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; margin-bottom: 10px; background: var(--background-color);';
+
+            if (data.resolved) {
+                div.style.opacity = '0.6';
+            }
+
+            const timestamp = data.timestamp ? formatDateTime(toDate(data.timestamp)) : '不明';
+            const statusBadge = data.resolved
+                ? '<span style="background: var(--success-color); color: #fff; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem;">解決済み</span>'
+                : '<span style="background: var(--danger-color); color: #fff; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem;">未解決</span>';
+
+            div.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <div style="font-size: 0.8rem; color: #888;">
+                        ${timestamp} ${statusBadge}
+                    </div>
+                    <div style="display: flex; gap: 5px;">
+                        ${!data.resolved ? `<button class="btn-primary small" style="padding: 3px 10px; font-size: 0.75rem;" onclick="markErrorResolved('${doc.id}')">解決済み</button>` : ''}
+                        <button class="btn-secondary small" style="padding: 3px 8px; font-size: 0.75rem;" onclick="toggleErrorDetail('${doc.id}')">詳細</button>
+                    </div>
+                </div>
+                <div style="font-weight: bold; color: var(--danger-color); margin-bottom: 4px; word-break: break-all;">
+                    ${escapeHtml(data.message || '(メッセージなし)')}
+                </div>
+                <div style="font-size: 0.8rem; color: #888;">
+                    ${data.context ? '📍 ' + escapeHtml(data.context) : ''}
+                    ${data.screen ? ' | 画面: ' + escapeHtml(data.screen) : ''}
+                    ${data.empId ? ' | 従業員: ' + escapeHtml(data.empId) : ''}
+                </div>
+                <div id="error-detail-${doc.id}" class="hidden" style="margin-top: 10px; padding: 10px; background: #fff; border-radius: 6px; border: 1px solid var(--border-color); font-size: 0.8rem;">
+                    <div style="margin-bottom: 8px;">
+                        <strong>スタックトレース:</strong>
+                        <pre style="white-space: pre-wrap; word-break: break-all; margin: 5px 0; padding: 8px; background: #f1f1f1; border-radius: 4px; max-height: 200px; overflow-y: auto; font-size: 0.75rem;">${escapeHtml(data.stack || '(なし)')}</pre>
+                    </div>
+                    <div style="margin-bottom: 4px;"><strong>URL:</strong> ${escapeHtml(data.url || '不明')}</div>
+                    <div><strong>ブラウザ:</strong> ${escapeHtml(data.userAgent || '不明')}</div>
+                </div>
+            `;
+
+            listEl.appendChild(div);
+        });
+
+    } catch (error) {
+        console.error("Error loading error logs:", error);
+        listEl.innerHTML = `<p style="color: var(--danger-color);">エラーログの読み込みに失敗しました: ${error.message}</p>`;
+    }
+}
+
+// HTMLエスケープ
+function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
+// エラー詳細の展開/折りたたみ
+function toggleErrorDetail(docId) {
+    const detail = document.getElementById(`error-detail-${docId}`);
+    if (detail) {
+        detail.classList.toggle('hidden');
+    }
+}
+
+// エラーを解決済みにマーク
+async function markErrorResolved(docId) {
+    try {
+        await db.collection("errorLogs").doc(docId).update({
+            resolved: true,
+            resolvedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        loadErrorLogs(); // リスト再読み込み
+    } catch (error) {
+        console.error("Mark resolved error:", error);
+        await showAlert("更新に失敗しました: " + error.message);
+    }
+}
+
+// 解決済みエラーを一括削除
+document.getElementById('btn-delete-resolved-logs').addEventListener('click', async () => {
+    const snapshot = await db.collection("errorLogs")
+        .where("resolved", "==", true)
+        .get();
+
+    if (snapshot.empty) {
+        await showAlert("削除対象の解決済みログはありません。");
+        return;
+    }
+
+    if (!(await showConfirm(`解決済みの ${snapshot.size} 件のエラーログを完全に削除しますか？\n（この操作は元に戻せません）`))) return;
+
+    try {
+        const batch = db.batch();
+        snapshot.forEach(doc => {
+            batch.delete(doc.ref);
+        });
+        await batch.commit();
+        await showAlert(`${snapshot.size} 件を削除しました。`);
+        loadErrorLogs();
+    } catch (error) {
+        console.error("Delete resolved logs error:", error);
+        await showAlert("削除に失敗しました: " + error.message);
+    }
+});

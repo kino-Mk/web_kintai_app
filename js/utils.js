@@ -218,3 +218,89 @@ function showConfirm(message) {
         okBtn.focus();
     });
 }
+
+// --- エラーレポート機能 ---
+
+/**
+ * 同一エラーの重複送信防止用キャッシュ
+ * キー: エラーメッセージのハッシュ, 値: 最終送信時刻
+ */
+const _errorReportCache = {};
+const ERROR_REPORT_INTERVAL_MS = 5 * 60 * 1000; // 同一エラーは5分間に1回のみ
+
+/**
+ * エラーをFirestoreに記録する
+ * @param {Error|string} error エラーオブジェクトまたはメッセージ
+ * @param {string} context エラー発生箇所の説明（例: "従業員一覧読み込み"）
+ */
+function reportError(error, context = '') {
+    try {
+        // db が未初期化の場合は何もしない
+        if (typeof db === 'undefined' || !db) return;
+
+        const message = error instanceof Error ? error.message : String(error);
+        const stack = error instanceof Error ? (error.stack || '') : '';
+
+        // 重複チェック（同一メッセージを5分以内に再送しない）
+        const cacheKey = message + context;
+        const now = Date.now();
+        if (_errorReportCache[cacheKey] && (now - _errorReportCache[cacheKey]) < ERROR_REPORT_INTERVAL_MS) {
+            return; // 重複送信を防止
+        }
+        _errorReportCache[cacheKey] = now;
+
+        // 現在の画面を取得
+        let currentScreen = '';
+        try {
+            const activeEl = document.querySelector('.screen.active');
+            if (activeEl) currentScreen = activeEl.id || '';
+        } catch (_) { /* 無視 */ }
+
+        // 操作中の従業員ID
+        let empId = '';
+        try {
+            if (typeof currentEmployee !== 'undefined' && currentEmployee) {
+                empId = currentEmployee.id || '';
+            } else if (typeof currentDetailEmpId !== 'undefined' && currentDetailEmpId) {
+                empId = currentDetailEmpId;
+            }
+        } catch (_) { /* 無視 */ }
+
+        // Firestoreに保存（バックグラウンド、失敗しても影響なし）
+        db.collection("errorLogs").add({
+            message: message,
+            stack: stack.substring(0, 2000), // スタックトレースは2000文字まで
+            context: context,
+            screen: currentScreen,
+            empId: empId,
+            userAgent: navigator.userAgent,
+            url: window.location.href,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+            resolved: false
+        }).catch(() => { /* Firestore書き込み失敗は無視 */ });
+
+    } catch (_) {
+        // エラーレポート自体のエラーは無視（無限ループ防止）
+    }
+}
+
+/**
+ * グローバルエラーハンドラー（キャッチされなかったエラーを捕捉）
+ */
+window.onerror = function (message, source, lineno, colno, error) {
+    reportError(
+        error || message,
+        `未キャッチエラー (${source || '不明'}:${lineno || 0}:${colno || 0})`
+    );
+};
+
+/**
+ * 未処理の Promise rejection を捕捉
+ */
+window.addEventListener('unhandledrejection', function (event) {
+    const error = event.reason;
+    reportError(
+        error instanceof Error ? error : String(error),
+        '未処理のPromise rejection'
+    );
+});

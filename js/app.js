@@ -10,6 +10,7 @@ const screens = {
     'admin-calendar': document.getElementById('screen-admin-calendar'),
     'admin-rate-overview': document.getElementById('screen-admin-rate-overview'),
     'admin-employee-detail': document.getElementById('screen-admin-employee-detail'),
+    'admin-error-logs': document.getElementById('screen-admin-error-logs'),
     timeStamp: document.getElementById('screen-time-stamp'),
     application: document.getElementById('screen-application')
 };
@@ -61,7 +62,7 @@ navBackBtn.addEventListener('click', () => {
 
     if (activeScreen === 'admin-employee-detail') {
         showScreen('admin-employees');
-    } else if (activeScreen === 'admin-employees' || activeScreen === 'admin-attendance' || activeScreen === 'admin-calendar' || activeScreen === 'admin-rate-overview') {
+    } else if (activeScreen === 'admin-employees' || activeScreen === 'admin-attendance' || activeScreen === 'admin-calendar' || activeScreen === 'admin-rate-overview' || activeScreen === 'admin-error-logs') {
         showScreen('admin');
     } else if (activeScreen === 'application') {
         showScreen('timeStamp');

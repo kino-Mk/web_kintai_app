@@ -97,6 +97,8 @@
                     style="background-color: #17a2b8;">休日カレンダー設定</button>
                 <button class="btn-large btn-secondary" onclick="showScreen('admin-rate-overview')"
                     style="background-color: #6f42c1; color: #fff;">出勤率一覧</button>
+                <button class="btn-large btn-secondary" onclick="showScreen('admin-error-logs')"
+                    style="background-color: #6c757d; color: #fff;">🐞 エラーログ</button>
             </div>
         </section>
 
@@ -653,6 +655,28 @@
                 </div>
             </div>
         </div>
+
+        <!-- 画面: エラーログ -->
+        <section id="screen-admin-error-logs" class="screen hidden">
+            <div class="screen-header">
+                <h2>🐞 エラーログ</h2>
+            </div>
+
+            <div class="card">
+                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 15px;">
+                    <select id="error-log-filter" style="padding: 8px; flex: 1; min-width: 140px;">
+                        <option value="unresolved">未解決のみ</option>
+                        <option value="all">すべて</option>
+                        <option value="resolved">解決済みのみ</option>
+                    </select>
+                    <button id="btn-load-error-logs" class="btn-primary" style="padding: 8px 20px;">表示</button>
+                    <button id="btn-delete-resolved-logs" class="btn-danger small"
+                        style="padding: 8px 15px;">解決済みを削除</button>
+                </div>
+                <div id="error-log-count" style="font-size: 0.85rem; color: #888; margin-bottom: 10px;"></div>
+                <div id="error-log-list"></div>
+            </div>
+        </section>
 
         <!-- スクリプト -->
         <script src="js/firebase-config.js"></script>

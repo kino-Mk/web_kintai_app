@@ -1,4 +1,4 @@
-const CACHE_NAME = 'attendance-v42';
+const CACHE_NAME = 'attendance-v43';
 const ASSETS = [
     './',
     './index.html',

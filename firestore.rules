@@ -42,5 +42,10 @@ service cloud.firestore {
     match /stampCorrections/{correctionId} {
       allow read, write: if true;
     }
+
+    // エラーログ
+    match /errorLogs/{logId} {
+      allow read, write: if true;
+    }
   }
 }
