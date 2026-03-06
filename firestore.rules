@@ -2,50 +2,65 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // 従業員データ (employees)
+    // 従業員データ
     match /employees/{employeeId} {
-      allow read, write: if true;
+      allow read, delete: if true;
+      allow create, update: if request.resource.data.id is string
+                            && request.resource.data.name is string;
     }
 
-    // 打刻データ (attendance)
+    // 打刻データ
     match /attendance/{docId} {
-      // 閲覧、作成、更新（備考編集など）、削除をすべて許可
-      allow read, create, update, delete: if true;
+      allow read, delete: if true;
+      allow create, update: if request.resource.data.empId is string 
+                            && request.resource.data.type in ['in', 'out']
+                            && request.resource.data.timestamp is timestamp;
     }
 
-    // 申請データ (applications)
+    // 申請データ
     match /applications/{applicationId} {
-      allow read, write: if true;
+      allow read, delete: if true;
+      allow create, update: if request.resource.data.empId is string
+                            && request.resource.data.status in ['pending', 'approved', 'rejected'];
     }
 
-    // 休日カレンダーデータ (holidays)
+    // 休日カレンダーデータ
     match /holidays/{dateString} {
-      allow read, write: if true;
+      allow read, delete: if true;
+      allow create, update: if request.resource.data.name is string;
     }
 
-    // 有給付与履歴 (今回追加)
+    // 有給付与履歴
     match /leaveGrants/{grantId} {
-      allow read, write: if true;
+      allow read, delete: if true;
+      allow create, update: if request.resource.data.empId is string
+                            && request.resource.data.days is number;
     }
 
-    // システム設定 (追加)
+    // システム設定
     match /system/{docId} {
-      allow read, write: if true;
+      allow read, delete: if true;
+      allow create, update: if true; // 柔軟性確保
     }
 
     // パスワードリセットトークン
     match /passwordResetTokens/{tokenId} {
-      allow read, write: if true;
+      allow read, delete: if true;
+      allow create, update: if request.resource.data.email is string
+                            && request.resource.data.token is string;
     }
 
     // 打刻修正申請
     match /stampCorrections/{correctionId} {
-      allow read, write: if true;
+      allow read, delete: if true;
+      allow create, update: if request.resource.data.empId is string
+                            && request.resource.data.status in ['pending', 'approved', 'rejected'];
     }
 
     // エラーログ
     match /errorLogs/{logId} {
-      allow read, write: if true;
+      allow read, delete: if true;
+      allow create, update: if request.resource.data.message is string;
     }
   }
 }

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kintai-app-v49';
+const CACHE_NAME = 'kintai-app-v50';
 const ASSETS = [
     './',
     './index.html',
@@ -8,7 +8,10 @@ const ASSETS = [
     './js/firebase-config.js',
     './js/utils.js',
     './js/app.js',
-    './js/admin.js',
+    './js/admin-core.js',
+    './js/admin-employee.js',
+    './js/admin-calendar.js',
+    './js/admin-attendance.js',
     './js/attendance.js',
     './images/icon.svg',
     './reset-password.html'

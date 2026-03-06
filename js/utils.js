@@ -2,6 +2,30 @@
  * 共通利用するユーティリティ関数
  */
 
+// --- システム共通定数 ---
+const COLLECTIONS = {
+    EMPLOYEES: 'employees',
+    ATTENDANCE: 'attendance',
+    APPLICATIONS: 'applications',
+    HOLIDAYS: 'holidays',
+    LEAVE_GRANTS: 'leaveGrants',
+    SYSTEM: 'system',
+    PASSWORD_RESETS: 'passwordResetTokens',
+    STAMP_CORRECTIONS: 'stampCorrections',
+    ERROR_LOGS: 'errorLogs'
+};
+
+const STATUS = {
+    PENDING: 'pending',
+    APPROVED: 'approved',
+    REJECTED: 'rejected'
+};
+
+const ATT_TYPE = {
+    IN: 'in',
+    OUT: 'out'
+};
+
 /**
  * Dateオブジェクトを YYYY-MM-DD 形式の文字列に変換
  * @param {Date} date 
