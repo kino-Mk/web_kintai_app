@@ -1,13 +1,10 @@
 {
   "hosting": {
-    "public": ".",
+    "public": "dist",
     "ignore": [
       "firebase.json",
-      "firestore.rules",
       "**/.*",
-      "**/node_modules/**",
-      "**/backup_*/**",
-      "README.md"
+      "**/node_modules/**"
     ],
     "rewrites": [
       {

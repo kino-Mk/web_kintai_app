@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>勤怠管理システム</title>
+    <link rel="icon" href="images/icon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/layout.css">
+    <link rel="stylesheet" href="css/history.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4f46e5">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+</head>
+
+<body>
+
+    <div id="app">
+        <!-- ナビゲーション / ヘッダー -->
+        <header class="app-header">
+            <h1>勤怠管理</h1>
+            <button id="nav-back-btn" class="hidden">戻る</button>
+        </header>
+
+        <!-- 画面: 従業員選択 (ホーム) -->
+        <section id="screen-employee-selection" class="screen active">
+            <div class="selection-header">
+                <h2>従業員選択</h2>
+                <div class="tabs">
+                    <button id="tab-all" class="tab-btn active" onclick="switchSelectionTab('all')">全従業員</button>
+                    <button id="tab-clocked-in" class="tab-btn"
+                        onclick="switchSelectionTab('clocked-in')">出勤中のみ</button>
+                </div>
+            </div>
+            <div id="employee-list" class="list-group">
+                <!-- 従業員ボタンがここに注入されます -->
+                <p class="loading-text">読み込み中...</p>
+            </div>
+
+            <div class="history-section">
+                <h3>本日の打刻状況 (全体)</h3>
+                <ul id="today-history-list-all" class="history-list"></ul>
+            </div>
+            <div class="mt-15">
+                <button id="btn-stamp-correction" class="btn-stamp-correction">打刻修正申請</button>
+            </div>
+            <!-- 管理者ボタンはURL方式に変更済みのため削除 -->
+        </section>
+
+        <!-- 画面: 管理者メニュー (ダッシュボード) -->
+        <section id="screen-admin" class="screen hidden">
+            <h2>管理者メニュー</h2>
+
+            <!-- アラート＆通知パネル -->
+            <div id="admin-alerts-panel" class="admin-alerts-panel">
+                <!-- 打刻漏れアラート -->
+                <div id="alert-missing-checkout" class="alert-card alert-warning hidden">
+                    <div class="alert-card-header">
+                        <span class="alert-icon">⚠️</span>
+                        <span class="alert-title">打刻漏れ</span>
+                        <span id="alert-missing-badge" class="alert-badge">0</span>
+                    </div>
+                    <div id="alert-missing-list" class="alert-card-body">
+                    </div>
+                </div>
+
+                <!-- 未処理申請通知 -->
+                <div id="alert-pending-apps" class="alert-card alert-info hidden">
+                    <div class="alert-card-header">
+                        <span class="alert-icon">📋</span>
+                        <span class="alert-title">未処理の申請</span>
+                        <span id="alert-pending-badge" class="alert-badge">0</span>
+                    </div>
+                    <div id="alert-pending-list" class="alert-card-body">
+                    </div>
+                </div>
+
+                <!-- 未処理打刻修正申請 -->
+                <div id="alert-pending-corrections" class="alert-card alert-info hidden">
+                    <div class="alert-card-header">
+                        <span class="alert-icon">🔧</span>
+                        <span class="alert-title">打刻修正申請</span>
+                        <span id="alert-correction-badge" class="alert-badge">0</span>
+                    </div>
+                    <div id="alert-correction-list" class="alert-card-body">
+                    </div>
+                </div>
+            </div>
+
+            <div class="menu-grid">
+                <button class="btn-large btn-primary" onclick="showScreen('admin-employees')">従業員管理 & データ出力</button>
+                <button class="btn-large btn-danger" onclick="showScreen('admin-attendance')">打刻データ管理 (修正・削除)</button>
+                <button class="btn-large btn-secondary bg-info"
+                    onclick="showScreen('admin-calendar')">休日カレンダー設定</button>
+                <button class="btn-large btn-secondary bg-purple text-white"
+                    onclick="showScreen('admin-rate-overview')">出勤率一覧</button>
+                <button class="btn-large btn-secondary bg-secondary text-white"
+                    onclick="showScreen('admin-error-logs')">エラーログ</button>
+            </div>
+        </section>
+
+        <!-- システムロックオーバーレイ (年次) -->
+        <div id="admin-lock-overlay" class="lock-overlay hidden">
+            <div class="lock-content">
+                <div class="lock-icon">🔒</div>
+                <h2>System Locked</h2>
+                <p>システム全体が現在ロックされています。</p>
+                <p class="lock-hint">認証が必要な期間です。認証操作を行ってください。</p>
+                <button id="btn-show-dummy-unlock" class="btn-lock-action">システムを解除する</button>
+            </div>
+        </div>
+
+        <!-- ダミー認証モーダル (解除不能) -->
+        <div id="dummy-lock-modal" class="modal-overlay hidden">
+            <div class="modal-content">
+                <h3>システム認証</h3>
+                <p class="mb-15 fs-09 text-muted">管理パスワードを入力してください</p>
+                <input type="password" id="dummy-password-input" placeholder="Password" autofocus>
+                <div id="dummy-error-msg" class="error-text hidden">認証に失敗しました。アクセス権限がありません。</div>
+                <div class="modal-actions">
+                    <button id="btn-dummy-cancel" class="btn-secondary small">キャンセル</button>
+                    <button id="btn-dummy-submit" class="btn-primary small">認証</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- フェイク・ターミナル演出 (驚かし) -->
+        <div id="fake-terminal-overlay" class="terminal-overlay hidden">
+            <div id="terminal-content" class="terminal-body"></div>
+            <div id="fatal-error-msg" class="fatal-error hidden">
+                <div>⚠️ FATAL ERROR</div>
+                <div class="mt-10 fs-12">DATA CORRUPTED</div>
+                <div class="mt-25 fs-15 fw-bold p-10 d-inline-block" class="text-warning border-warning">
+                    ⚠️ 管理者を呼んでください</div>
+                <div class="mt-15 fs-08 text-danger opacity-8">Attempting to recover...
+                    [FAILED]</div>
+            </div>
+        </div>
+
+        <!-- 画面: 出勤率一覧 -->
+        <section id="screen-admin-rate-overview" class="screen hidden">
+            <div class="screen-header">
+                <h2>出勤率一覧</h2>
+            </div>
+
+            <div class="card">
+                <h3>期間を指定</h3>
+                <div class="flex-row gap-10 align-center flex-wrap">
+                    <input type="month" id="rate-overview-start" class="flex-1 p-8 mw-140">
+                    <span class="fw-bold">～</span>
+                    <input type="month" id="rate-overview-end" class="flex-1 p-8 mw-140">
+                    <button id="btn-calc-rate-overview" class="btn-primary px-20-py-8">表示</button>
+                </div>
+                <div class="mt-8">
+                    <label class="fs-085 flex-row gap-6 cursor-pointer align-center">
+                        <input type="checkbox" id="rate-overview-include-paid-leave" checked class="w-auto m-0">
+                        有給・半休も出勤日数に含む
+                    </label>
+                </div>
+            </div>
+
+            <div class="card">
+                <div id="rate-overview-result">
+                    <p class="loading-text">上の期間を指定して「表示」を押してください。</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 画面: 従業員管理 & CSV -->
+        <section id="screen-admin-employees" class="screen hidden">
+            <div class="screen-header">
+                <h2>従業員管理</h2>
+            </div>
+
+            <div class="card">
+                <h3>従業員登録</h3>
+                <input type="text" id="admin-emp-id" placeholder="従業員ID" />
+                <input type="text" id="admin-emp-name" placeholder="氏名" />
+                <button id="btn-add-employee" class="btn-primary">登録</button>
+            </div>
+
+            <div class="card">
+                <h3>従業員一覧</h3>
+                <ul id="admin-employee-list-view">
+                    <!-- リスト -->
+                </ul>
+            </div>
+
+            <div class="card">
+                <h3>データ出力</h3>
+                <button id="btn-export-csv" class="btn-action">打刻データCSV出力</button>
+                <div class="mt-15 mb-5">
+                    <label for="export-month-selector" class="fs-09">対象月:</label>
+                    <input type="month" id="export-month-selector" class="p-5 ml-5">
+                </div>
+                <button id="btn-export-monthly-csv" class="btn-action">月次勤怠CSV出力</button>
+            </div>
+        </section>
+
+        <!-- 画面: 従業員詳細 -->
+        <section id="screen-admin-employee-detail" class="screen hidden">
+            <div class="screen-header">
+                <h2 id="detail-emp-title">従業員詳細</h2>
+            </div>
+
+            <!-- 従業員切替セレクター (常に表示) -->
+            <div class="card mb-15 p-10">
+                <div class="flex-row gap-10 align-center flex-wrap">
+                    <label for="detail-emp-switcher" class="fs-09 fw-bold">従業員を切り替える:</label>
+                    <select id="detail-emp-switcher" class="w-auto m-0 mw-200">
+                        <!-- 従業員リスト -->
+                    </select>
+                </div>
+            </div>
+
+            <!-- 詳細タブナビゲーション -->
+            <div class="detail-tabs">
+                <button class="detail-tab-btn active" onclick="switchDetailTab('basic')">👤 基本情報</button>
+                <button class="detail-tab-btn" onclick="switchDetailTab('attendance')">🕒 勤務記録</button>
+                <button class="detail-tab-btn" onclick="switchDetailTab('leave')">📅 有給管理</button>
+                <button class="detail-tab-btn" onclick="switchDetailTab('applications')">✉️ 申請履歴</button>
+            </div>
+
+            <!-- タブ: 基本情報 -->
+            <div id="tab-detail-basic" class="tab-content active">
+                <div class="card-container-horizontal">
+                    <!-- 出勤率 -->
+                    <div class="card">
+                        <h3 class="section-title-sub">📊 出勤率サマリー</h3>
+                        <div class="flex-row gap-15 flex-wrap">
+                            <div class="text-center flex-1 p-15 bg-light border-radius-8">
+                                <div class="fs-08 text-muted">今月</div>
+                                <div id="detail-rate-month" class="fs-18 fw-bold">--</div>
+                            </div>
+                            <div class="text-center flex-1 p-15 bg-light border-radius-8">
+                                <div class="fs-08 text-muted">累計平均</div>
+                                <div id="detail-rate-total" class="fs-18 fw-bold">--</div>
+                            </div>
+                        </div>
+                        <div
+                            class="mt-15 fs-085 flex-row gap-8 bg-white border-radius-4 align-center border-dee2e6 px-10-py-6">
+                            <input type="checkbox" id="toggle-include-paid-leave" class="w-auto m-0">
+                            <label for="toggle-include-paid-leave" class="fw-bold cursor-pointer">有給を出勤日数に含める</label>
+                        </div>
+                        <div class="mt-20">
+                            <h4 class="mb-10 fs-09">直近6ヶ月の推移</h4>
+                            <div id="detail-monthly-rates">読み込み中...</div>
+                        </div>
+                    </div>
+
+                    <!-- 基本設定 -->
+                    <div class="card">
+                        <h3 class="section-title-sub">✏️ 従業員設定</h3>
+                        <div class="form-group-row">
+                            <label>従業員ID</label>
+                            <input type="text" id="detail-emp-id" readonly class="cursor-not-allowed bg-lighter">
+                        </div>
+                        <div class="form-group-row">
+                            <label>氏名</label>
+                            <input type="text" id="detail-emp-name">
+                        </div>
+                        <div class="form-group-row">
+                            <label>メールアドレス</label>
+                            <input type="email" id="detail-emp-email" placeholder="パスワードリセット用">
+                        </div>
+                        <div class="form-group-row">
+                            <label>パスワード</label>
+                            <input type="password" id="detail-emp-password" placeholder="スマホ利用時のみ必要">
+                        </div>
+                        <div class="form-group-row">
+                            <label>有給残数</label>
+                            <span id="detail-emp-leave-display" class="val-badge fw-bold fs-11">--
+                                日</span>
+                            <input type="hidden" id="detail-emp-leave">
+                        </div>
+                        <div class="form-group-row mt-10 border-t-f0f0f0 pt-12">
+                            <label class="flex-row gap-8 cursor-pointer align-center">
+                                <input type="checkbox" id="detail-emp-hidden" class="w-auto m-0">
+                                <span class="fs-09 fw-bold text-danger-dark">選択画面で非表示にする</span>
+                            </label>
+                        </div>
+                        <div class="mt-25 flex-row gap-10">
+                            <button id="btn-detail-save" class="btn-primary flex-2">設定を保存</button>
+                            <button id="btn-detail-delete" class="btn-danger flex-1 p-8">削除</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- タブ: 勤務記録 -->
+            <div id="tab-detail-attendance" class="tab-content">
+                <!-- 打刻漏れアラート（該当従業員） -->
+                <div id="detail-missing-checkout-alert" class="alert-card alert-warning hidden mb-15">
+                    <div class="alert-card-header">
+                        <span class="alert-icon">⚠️</span>
+                        <span class="alert-title">打刻漏れ</span>
+                    </div>
+                    <div id="detail-missing-checkout-list" class="alert-card-body"></div>
+                </div>
+                <div class="card">
+                    <h3 class="section-title-sub">🕒 打刻データの管理</h3>
+
+                    <div id="detail-att-add-form" class="mb-20 p-15 border-radius-8 border-dashed-ced4da bg-lighter">
+                        <h4 class="mb-10 fs-09">打刻の手動追加</h4>
+                        <div class="flex-row gap-8 align-flex-end flex-wrap">
+                            <div class="flex-1 mw-160">
+                                <label class="fs-075">日時</label>
+                                <input type="datetime-local" id="add-att-datetime" class="p-6">
+                            </div>
+                            <div class="w-80">
+                                <label class="fs-075">種別</label>
+                                <select id="add-att-type" class="p-6">
+                                    <option value="in">出勤</option>
+                                    <option value="out">退勤</option>
+                                </select>
+                            </div>
+                            <div class="flex-2 mw-150">
+                                <label class="fs-075">備考</label>
+                                <input type="text" id="add-att-remark" placeholder="修正理由など" class="p-6">
+                            </div>
+                            <button id="btn-add-att-manual" class="btn-primary fs-09 w-auto px-15-py-8">追加</button>
+                        </div>
+                    </div>
+
+                    <div class="mb-15 flex-row gap-10 p-10 border-radius-6 align-center bg-eee">
+                        <label class="fs-09 fw-bold">表示月:</label>
+                        <input type="month" id="detail-att-month-selector" class="w-auto m-0 p-6">
+                        <button id="btn-detail-att-load" class="btn-secondary w-auto px-15-py-6">表示</button>
+                    </div>
+
+                    <div id="detail-attendance-container">
+                        <div id="detail-att-count" class="fs-085 border-b-eee pb-8">件数: --</div>
+                        <div id="detail-attendance-list" class="admin-attendance-list mh-400 overflow-y-auto">
+                            <!-- 一覧 -->
+                        </div>
+                        <div class="mt-15 text-right">
+                            <button id="btn-detail-att-delete"
+                                class="btn-danger w-auto d-none px-15-py-6">選択したデータを削除</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- タブ: 有給管理 -->
+            <div id="tab-detail-leave" class="tab-content">
+                <div class="card">
+                    <h3 class="section-title-sub">📅 有給休暇の付与・期限管理</h3>
+                    <div class="card-container-horizontal align-flex-start">
+                        <div class="flex-2">
+                            <div id="leave-grant-list-container"
+                                class="border-radius-4 border-eee mh-350 overflow-y-auto">
+                                <table class="fs-085 w-100 border-collapse">
+                                    <thead class="bg-light sticky-top-0">
+                                        <tr>
+                                            <th class="p-10 border-b-ddd text-left">
+                                                付与日</th>
+                                            <th class="text-center p-10 border-b-ddd">
+                                                日数</th>
+                                            <th class="p-10 border-b-ddd text-left">
+                                                有効期限</th>
+                                            <th class="text-center p-10 border-b-ddd">
+                                                状態</th>
+                                            <th class="text-center p-10 border-b-ddd">
+                                                操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="leave-grant-table-body">
+                                        <!-- 動的に生成 -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="flex-row gap-15 flex-1 flex-col">
+                            <div id="leave-calc-summary" class="fs-085 p-15 border-radius-8 border-bce0ff bg-eef7ff">
+                                読み込み中...
+                            </div>
+                            <div class="p-15 border-radius-8 border-dashed-ccc">
+                                <h4 class="mb-10 fs-09">新しい有給を付与</h4>
+                                <input type="date" id="grant-date" class="p-8">
+                                <input type="number" id="grant-amount" placeholder="日数" class="p-8">
+                                <input type="text" id="grant-note" placeholder="備考" class="p-8">
+                                <button id="btn-grant-leave" class="btn-primary p-8">付与実行</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- タブ: 申請履歴 -->
+            <div id="tab-detail-applications" class="tab-content">
+                <div class="card-container-horizontal">
+                    <div class="card flex-1">
+                        <h3 class="section-title-sub">⏳ 未読・未承認の申請</h3>
+                        <div id="detail-pending-apps" class="list-group mh-400 overflow-y-auto">
+                            <!-- 申請 -->
+                        </div>
+                    </div>
+                    <div class="card flex-1">
+                        <h3 class="section-title-sub">✅ 処理済みの申請履歴</h3>
+                        <div class="flex-row gap-8 flex-col mb-12">
+                            <div class="flex-row gap-5 align-center">
+                                <select id="detail-app-filter-type" class="fs-085 w-auto m-0 p-6">
+                                    <option value="month">月別</option>
+                                    <option value="year">年別</option>
+                                </select>
+                                <input type="month" id="detail-app-month-selector" class="flex-1 m-0 p-6">
+                                <select id="detail-app-year-selector" class="flex-1 m-0 d-none p-6">
+                                    <!-- 動的に生成 -->
+                                </select>
+                                <button id="btn-detail-app-filter"
+                                    class="btn-primary fs-085 w-auto px-12-py-6">表示</button>
+                            </div>
+                        </div>
+                        <div id="detail-completed-apps" class="list-group mh-350 overflow-y-auto">
+                            <!-- 履歴 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 画面: 打刻データ管理 (修正・削除) -->
+        <section id="screen-admin-attendance" class="screen hidden">
+            <div class="screen-header">
+                <h2>打刻データ管理</h2>
+            </div>
+
+            <!-- タブ切替 -->
+            <div class="admin-att-tabs">
+                <button class="admin-att-tab-btn active" onclick="switchAdminAttTab('data')">📋 打刻データ管理</button>
+                <button class="admin-att-tab-btn" onclick="switchAdminAttTab('corrections')">🔧 打刻修正申請 <span
+                        id="correction-badge" class="correction-badge hidden">0</span></button>
+            </div>
+
+            <!-- タブ: 打刻データ管理 -->
+            <div id="tab-admin-att-data" class="admin-att-tab-content active">
+                <div class="card mb-15">
+                    <div class="filters flex-row gap-10 align-center flex-wrap">
+                        <input type="month" id="filter-att-month" class="p-5">
+                        <select id="filter-att-employee" class="p-5">
+                            <option value="">全ての従業員</option>
+                        </select>
+                        <button id="btn-filter-att-apply" class="btn-secondary px-10-py-5">検索</button>
+                    </div>
+                </div>
+
+                <div class="mb-10 flex-row align-center flex-justify-between">
+                    <span id="att-record-count" class="fs-09 fw-bold"></span>
+                    <button id="btn-delete-selected-att" class="btn-danger d-none px-15-py-5">選択したデータを削除</button>
+                </div>
+
+                <div id="admin-attendance-list">
+                    <p>検索条件を指定し、編集したい月や従業員のデータを呼び出してください。</p>
+                </div>
+            </div>
+
+            <!-- タブ: 打刻修正申請一覧 -->
+            <div id="tab-admin-att-corrections" class="admin-att-tab-content">
+                <div class="card">
+                    <h3 class="section-title-sub">⏳ 未処理の打刻修正申請</h3>
+                    <div id="admin-correction-list" class="list-group overflow-y-auto max-h-500">
+                        <p class="loading-text">読み込み中...</p>
+                    </div>
+                </div>
+                <div class="card mt-15">
+                    <h3 class="section-title-sub">✅ 処理済みの打刻修正申請</h3>
+                    <div id="admin-correction-completed-list" class="list-group overflow-y-auto max-h-300">
+                        <p class="loading-text">読み込み中...</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 画面: 休日カレンダー設定 -->
+        <section id="screen-admin-calendar" class="screen hidden">
+            <div class="screen-header">
+                <h2>休日カレンダー設定</h2>
+            </div>
+
+            <div class="card mb-15">
+                <p class="mb-15 fs-09">
+                    対象の月を選択し、カレンダーの日付をクリックして「休日（赤色）」を設定してください。<br>
+                    ※ここで設定した休日が、従業員の「出勤率」を計算する際の分母（=除外する日）になります。
+                </p>
+                <div class="mb-15 flex-row gap-10 align-center">
+                    <label for="calendar-month-selector" class="fw-bold">対象月:</label>
+                    <input type="month" id="calendar-month-selector" class="p-5">
+                    <button id="btn-calendar-load" class="btn-secondary px-15-py-5">表示</button>
+                    <button id="btn-calendar-auto-set"
+                        class="btn-primary w-auto bg-green px-15-py-5">土日・祝日を自動設定</button>
+                </div>
+
+                <div id="calendar-container">
+                    <p class="loading-text" id="calendar-message">月を選択して「表示」を押してください</p>
+                    <!-- ここにJavaScriptでカレンダーグリッドが生成されます -->
+                    <div id="calendar-grid" class="calendar-grid hidden"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 画面: 打刻 (出勤/退勤) -->
+        <section id="screen-time-stamp" class="screen hidden">
+            <h2 id="ts-employee-name">従業員名</h2>
+
+            <div class="split-view">
+                <div class="main-content">
+                    <div class="timestamp-actions">
+                        <button id="btn-clock-in" class="btn-large btn-clock-in">出勤</button>
+                        <button id="btn-clock-out" class="btn-large btn-clock-out">退勤</button>
+                    </div>
+                    <div class="navigation-links">
+                        <button id="btn-go-application" class="btn-secondary">勤怠申請へ</button>
+                    </div>
+                </div>
+
+                <div class="side-content">
+                    <div class="history-section">
+                        <h3>本日の打刻履歴</h3>
+                        <ul id="today-history-list-personal" class="history-list"></ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 画面: 勤怠申請 -->
+        <section id="screen-application" class="screen hidden">
+            <h2 id="app-employee-name">申請画面</h2>
+            <div id="application-balance-info" class="mb-15 fw-bold text-primary">
+                <!-- 有給残日数がここに表示されます -->
+            </div>
+            <div class="application-form">
+                <label>申請種別</label>
+                <select id="application-type">
+                    <option value="有給">有給 (全休)</option>
+                    <option value="半休(午前)">有給 (半休・午前)</option>
+                    <option value="半休(午後)">有給 (半休・午後)</option>
+                    <option value="欠勤">欠勤</option>
+                    <option value="遅刻">遅刻</option>
+                    <option value="早退">早退</option>
+                    <option value="残業">残業</option>
+                </select>
+
+                <div id="time-input-group" class="hidden mb-10 flex-row gap-10">
+                    <div class="flex-1">
+                        <label>出勤時刻</label>
+                        <input type="time" id="application-start-time">
+                    </div>
+                    <div class="flex-1">
+                        <label>退勤時刻</label>
+                        <input type="time" id="application-end-time">
+                    </div>
+                </div>
+
+                <label>日付</label>
+                <input type="date" id="application-date" required>
+
+                <label>備考 (任意)</label>
+                <textarea id="application-reason" rows="3"></textarea>
+
+                <button id="btn-submit-application" class="btn-primary">申請する</button>
+            </div>
+        </section>
+        <!-- パスワード入力モーダル -->
+        <div id="password-modal" class="modal-overlay hidden">
+            <div class="modal-content">
+                <!-- パスワード入力画面 -->
+                <div id="password-input-view">
+                    <h3>パスワード認証</h3>
+                    <p id="modal-emp-name" class="mb-15 fw-bold"></p>
+                    <input type="password" id="modal-password-input" placeholder="パスワードを入力してください" autofocus>
+                    <div id="modal-error-msg" class="error-text hidden">パスワードが正しくありません</div>
+                    <div class="mt-10 fs-08 text-center">
+                        <a href="#" id="link-forgot-password" class="text-underline text-primary">パスワードを忘れた方はこちら</a>
+                    </div>
+                    <div class="modal-actions">
+                        <button id="btn-modal-cancel" class="btn-secondary small">キャンセル</button>
+                        <button id="btn-modal-submit" class="btn-primary small">認証</button>
+                    </div>
+                </div>
+                <!-- パスワードリセット申請画面 -->
+                <div id="password-reset-view" class="hidden">
+                    <h3>パスワードリセット</h3>
+                    <p class="fs-085 text-muted mb-12">
+                        従業員IDとメールアドレスを入力してください。一致する情報が登録されている場合、リセットリンクを送信します。</p>
+                    <input type="text" id="reset-emp-id-input" placeholder="従業員ID" class="mb-10">
+                    <input type="email" id="reset-email-input" placeholder="メールアドレス" class="mb-10">
+                    <div id="reset-status-msg" class="hidden mb-10 fs-085 p-8 border-radius-4"></div>
+                    <div class="modal-actions">
+                        <button id="btn-reset-back" class="btn-secondary small">戻る</button>
+                        <button id="btn-reset-send" class="btn-primary small">送信</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 打刻修正申請モーダル -->
+        <div id="stamp-correction-modal" class="modal-overlay hidden">
+            <div class="modal-content max-w-500 p-30">
+                <h3 class="mb-15">打刻修正申請</h3>
+                <p class="fs-085 text-muted mb-12">
+                    本日の打刻一覧から、削除したい打刻を選択してください。管理者が承認すると該当の打刻データが削除されます。</p>
+                <div id="correction-stamp-list"
+                    class="mb-15 p-8 border-radius-8 mh-350 overflow-y-auto border-var-border">
+                    <p class="loading-text">読み込み中...</p>
+                </div>
+                <div class="mb-15">
+                    <label class="fs-085">理由 (任意)</label>
+                    <textarea id="correction-reason" rows="2" placeholder="間違えて打刻した等" class="mb-0"></textarea>
+                </div>
+                <div class="modal-actions flex-row gap-10 flex-justify-end">
+                    <button id="btn-correction-cancel" class="btn-secondary small">キャンセル</button>
+                    <button id="btn-correction-submit" class="btn-primary small">申請する</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- カスタムダイアログ（alert/confirm代替） -->
+        <div id="custom-dialog-overlay" class="modal-overlay hidden">
+            <div class="modal-content max-w-400 p-30">
+                <p id="custom-dialog-message" class="mb-20 fs-095 line-height-16 color-text-main"></p>
+                <div class="modal-actions flex-row gap-10 flex-justify-end">
+                    <button id="custom-dialog-cancel" class="btn-secondary small hidden">キャンセル</button>
+                    <button id="custom-dialog-ok" class="btn-primary small">OK</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 画面: エラーログ -->
+        <section id="screen-admin-error-logs" class="screen hidden">
+            <div class="screen-header">
+                <h2>エラーログ</h2>
+            </div>
+
+            <div class="card">
+                <div class="mb-15 flex-row gap-10 align-center flex-wrap">
+                    <select id="error-log-filter" class="flex-1 p-8 mw-140">
+                        <option value="unresolved">未解決のみ</option>
+                        <option value="all">すべて</option>
+                        <option value="resolved">解決済みのみ</option>
+                    </select>
+                    <button id="btn-load-error-logs" class="btn-primary px-20-py-8">表示</button>
+                    <button id="btn-delete-resolved-logs" class="btn-danger small px-15-py-8">解決済みを削除</button>
+                </div>
+                <div id="error-log-count" class="mb-10 fs-085 text-muted-888"></div>
+                <div id="error-log-list"></div>
+            </div>
+        </section>
+
+        <!-- スクリプト -->
+        <script src="js/firebase-config.js"></script>
+        <script src="js/utils.js"></script>
+        <script src="js/app.js"></script>
+        <script src="js/admin-core.js"></script>
+        <script src="js/admin-employee.js"></script>
+        <script src="js/admin-calendar.js"></script>
+        <script src="js/admin-attendance.js"></script>
+        <script src="js/attendance.js"></script>
+</body>
+
+</html>
