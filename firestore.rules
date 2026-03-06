@@ -46,7 +46,7 @@ service cloud.firestore {
     // パスワードリセットトークン
     match /passwordResetTokens/{tokenId} {
       allow read, delete: if true;
-      allow create, update: if request.resource.data.email is string
+      allow create, update: if request.resource.data.empId is string
                             && request.resource.data.token is string;
     }
 
