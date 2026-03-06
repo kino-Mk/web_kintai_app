@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kintai-app-v48';
+const CACHE_NAME = 'kintai-app-v49';
 const ASSETS = [
     './',
     './index.html',

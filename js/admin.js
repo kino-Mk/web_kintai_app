@@ -2216,15 +2216,21 @@ initCorrectionBadgeListener();
 // --- 管理者ダッシュボード アラート＆通知 ---
 
 let alertUnsubscribers = [];
+let adminAlertsLoaded = false;
 
 function loadAdminAlerts() {
-    // 既存リスナーを解除
+    // 既にリスナーが登録済みの場合は再登録しない（画面遷移ごとの再読み込み負荷を軽減）
+    if (adminAlertsLoaded) return;
+
+    // 既存リスナーがあれば念のため解除
     alertUnsubscribers.forEach(unsub => unsub());
     alertUnsubscribers = [];
 
     loadMissingCheckoutAlert();
     loadPendingAppsAlert();
     loadPendingCorrectionsAlert();
+
+    adminAlertsLoaded = true;
 }
 
 // 従業員詳細画面: 打刻漏れアラート表示
