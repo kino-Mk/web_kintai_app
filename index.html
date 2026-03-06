@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="css/history.css">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4f46e5">
-    <!-- Firebase SDKs -->
+    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 </head>
@@ -93,9 +93,12 @@
             <div class="menu-grid">
                 <button class="btn-large btn-primary" onclick="showScreen('admin-employees')">従業員管理 & データ出力</button>
                 <button class="btn-large btn-danger" onclick="showScreen('admin-attendance')">打刻データ管理 (修正・削除)</button>
-                <button class="btn-large btn-secondary bg-info" onclick="showScreen('admin-calendar')">休日カレンダー設定</button>
-                <button class="btn-large btn-secondary bg-purple text-white" onclick="showScreen('admin-rate-overview')">出勤率一覧</button>
-                <button class="btn-large btn-secondary bg-secondary text-white" onclick="showScreen('admin-error-logs')">エラーログ</button>
+                <button class="btn-large btn-secondary bg-info"
+                    onclick="showScreen('admin-calendar')">休日カレンダー設定</button>
+                <button class="btn-large btn-secondary bg-purple text-white"
+                    onclick="showScreen('admin-rate-overview')">出勤率一覧</button>
+                <button class="btn-large btn-secondary bg-secondary text-white"
+                    onclick="showScreen('admin-error-logs')">エラーログ</button>
             </div>
         </section>
 
@@ -237,7 +240,8 @@
                                 <div id="detail-rate-total" class="fs-18 fw-bold">--</div>
                             </div>
                         </div>
-                        <div class="mt-15 fs-085 flex-row gap-8 bg-white border-radius-4 align-center border-dee2e6 px-10-py-6">
+                        <div
+                            class="mt-15 fs-085 flex-row gap-8 bg-white border-radius-4 align-center border-dee2e6 px-10-py-6">
                             <input type="checkbox" id="toggle-include-paid-leave" class="w-auto m-0">
                             <label for="toggle-include-paid-leave" class="fw-bold cursor-pointer">有給を出勤日数に含める</label>
                         </div>
@@ -268,7 +272,8 @@
                         </div>
                         <div class="form-group-row">
                             <label>有給残数</label>
-                            <span id="detail-emp-leave-display" class="val-badge fw-bold" style="font-size: 1.1rem;">-- 日</span>
+                            <span id="detail-emp-leave-display" class="val-badge fw-bold" style="font-size: 1.1rem;">--
+                                日</span>
                             <input type="hidden" id="detail-emp-leave">
                         </div>
                         <div class="form-group-row mt-10 border-t-f0f0f0 pt-12">
@@ -298,7 +303,8 @@
                 <div class="card">
                     <h3 class="section-title-sub">🕒 打刻データの管理</h3>
 
-                    <div id="detail-att-add-form" class="mb-20 p-15 border-radius-8 border-dashed-ced4da" style="background: #f9f9fb;">
+                    <div id="detail-att-add-form" class="mb-20 p-15 border-radius-8 border-dashed-ced4da"
+                        style="background: #f9f9fb;">
                         <h4 class="mb-10 fs-09">打刻の手動追加</h4>
                         <div class="flex-row gap-8 align-flex-end flex-wrap">
                             <div class="flex-1 mw-160">
@@ -332,7 +338,8 @@
                             <!-- 一覧 -->
                         </div>
                         <div class="mt-15 text-right">
-                            <button id="btn-detail-att-delete" class="btn-danger w-auto d-none px-15-py-6">選択したデータを削除</button>
+                            <button id="btn-detail-att-delete"
+                                class="btn-danger w-auto d-none px-15-py-6">選択したデータを削除</button>
                         </div>
                     </div>
                 </div>
@@ -344,7 +351,8 @@
                     <h3 class="section-title-sub">📅 有給休暇の付与・期限管理</h3>
                     <div class="card-container-horizontal align-flex-start">
                         <div class="flex-2">
-                            <div id="leave-grant-list-container" class="border-radius-4 border-eee mh-350 overflow-y-auto">
+                            <div id="leave-grant-list-container"
+                                class="border-radius-4 border-eee mh-350 overflow-y-auto">
                                 <table class="fs-085 w-100 border-collapse">
                                     <thead class="bg-light sticky-top-0">
                                         <tr>
@@ -403,7 +411,8 @@
                                 <select id="detail-app-year-selector" class="flex-1 m-0 d-none p-6">
                                     <!-- 動的に生成 -->
                                 </select>
-                                <button id="btn-detail-app-filter" class="btn-primary fs-085 w-auto px-12-py-6">表示</button>
+                                <button id="btn-detail-app-filter"
+                                    class="btn-primary fs-085 w-auto px-12-py-6">表示</button>
                             </div>
                         </div>
                         <div id="detail-completed-apps" class="list-group mh-350 overflow-y-auto">
@@ -481,7 +490,8 @@
                     <label for="calendar-month-selector" class="fw-bold">対象月:</label>
                     <input type="month" id="calendar-month-selector" class="p-5">
                     <button id="btn-calendar-load" class="btn-secondary px-15-py-5">表示</button>
-                    <button id="btn-calendar-auto-set" class="btn-primary w-auto bg-green px-15-py-5">土日・祝日を自動設定</button>
+                    <button id="btn-calendar-auto-set"
+                        class="btn-primary w-auto bg-green px-15-py-5">土日・祝日を自動設定</button>
                 </div>
 
                 <div id="calendar-container">
@@ -593,7 +603,8 @@
                 <h3 class="mb-15">打刻修正申請</h3>
                 <p class="fs-085 text-muted mb-12">
                     本日の打刻一覧から、削除したい打刻を選択してください。管理者が承認すると該当の打刻データが削除されます。</p>
-                <div id="correction-stamp-list" class="mb-15 p-8 border-radius-8 mh-350 overflow-y-auto border-var-border">
+                <div id="correction-stamp-list"
+                    class="mb-15 p-8 border-radius-8 mh-350 overflow-y-auto border-var-border">
                     <p class="loading-text">読み込み中...</p>
                 </div>
                 <div class="mb-15">

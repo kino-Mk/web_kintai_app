@@ -5,7 +5,7 @@ function sendNotificationEmail(payload) {
     fetch(GAS_WEBAPP_URL, {
         method: 'POST',
         body: JSON.stringify(payload)
-    }).catch(err => console.error('メール通知送信エラー:', err));
+    }).catch(error => console.error('メール通知送信エラー:', error));
 }
 
 // --- 状態管理 (従業員選択タブ用) ---
@@ -18,7 +18,7 @@ function initAttendanceTracker() {
 
     // 従業員の最新の打刻状態を取得
     db.collection('attendance')
-        .where('timestamp', ">=", start)
+        .where('timestamp', '>=', start)
         .orderBy('timestamp', 'asc') // 古い順に処理して最終状態を残す
         .onSnapshot((snapshot) => {
             currentDayAttendanceStates = {}; // リセット
@@ -191,9 +191,9 @@ document.getElementById('btn-submit-application').addEventListener('click', asyn
         });
 
         await showAlert('申請しました');
-        document.getElementById('application-reason').value = "";
-        document.getElementById('application-start-time').value = "";
-        document.getElementById('application-end-time').value = "";
+        document.getElementById('application-reason').value = '';
+        document.getElementById('application-start-time').value = '';
+        document.getElementById('application-end-time').value = '';
         showScreen('selection');
     } catch (error) {
         console.error('Error submitting application:', error);
@@ -258,7 +258,7 @@ async function updatePaidLeaveDisplay(empId) {
     try {
         // 1. 付与履歴を取得
         const grantsSnapshot = await db.collection('leaveGrants')
-            .where('empId', "==", empId)
+            .where('empId', '==', empId)
             .orderBy('grantDate', 'asc')
             .get();
 
@@ -270,8 +270,8 @@ async function updatePaidLeaveDisplay(empId) {
 
         // 2. 使用済み申請を取得 (有給・半休、ステータス=completed)
         const appsSnapshot = await db.collection('applications')
-            .where('empId', "==", empId)
-            .where('status', "==", 'completed')
+            .where('empId', '==', empId)
+            .where('status', '==', 'completed')
             .get();
 
         let totalUsedDays = 0;
@@ -304,7 +304,7 @@ function loadTodayHistoryAll() {
     const start = getStartOfToday();
 
     db.collection('attendance')
-        .where('timestamp', ">=", start)
+        .where('timestamp', '>=', start)
         .orderBy('timestamp', 'desc')
         .limit(20) // 最新20件
         .onSnapshot((snapshot) => {
@@ -332,8 +332,8 @@ function loadTodayHistoryPersonal(empId) {
     const start = getStartOfToday();
 
     db.collection('attendance')
-        .where('empId', "==", empId)
-        .where('timestamp', ">=", start)
+        .where('empId', '==', empId)
+        .where('timestamp', '>=', start)
         .orderBy('timestamp', 'desc')
         .onSnapshot((snapshot) => {
             list.innerHTML = "";
@@ -428,7 +428,7 @@ async function openStampCorrectionModal() {
         // 当日の全打刻データを取得
         const start = getStartOfToday();
         const snapshot = await db.collection('attendance')
-            .where('timestamp', ">=", start)
+            .where('timestamp', '>=', start)
             .orderBy('timestamp', 'asc')
             .get();
 

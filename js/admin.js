@@ -125,7 +125,7 @@ async function calculateLeaveBalanceForList(empId, spanId) {
     try {
         // 付与履歴を取得
         const grantsSnapshot = await db.collection('leaveGrants')
-            .where('empId', "==", empId)
+            .where('empId', '==', empId)
             .orderBy('grantDate', 'asc')
             .get();
 
@@ -138,8 +138,8 @@ async function calculateLeaveBalanceForList(empId, spanId) {
 
         // 使用済み申請を取得 (有給・半休、ステータス=completed)
         const appsSnapshot = await db.collection('applications')
-            .where('empId', "==", empId)
-            .where('status', "==", 'completed')
+            .where('empId', '==', empId)
+            .where('status', '==', 'completed')
             .get();
 
         let totalUsedDays = 0;
@@ -216,8 +216,8 @@ document.getElementById('btn-add-employee').addEventListener('click', async () =
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
         await showAlert('従業員を登録しました');
-        idInput.value = "";
-        nameInput.value = "";
+        idInput.value = '';
+        nameInput.value = '';
     } catch (error) {
         console.error('Error adding employee: ', error);
         await showAlert("エラーが発生しました: " + error.message);
@@ -291,8 +291,8 @@ document.getElementById('btn-export-monthly-csv').addEventListener('click', asyn
 
         // 選択された月のデータのみ取得
         const snapshot = await db.collection('attendance')
-            .where('timestamp', ">=", startDate)
-            .where('timestamp', "<", endDate)
+            .where('timestamp', '>=', startDate)
+            .where('timestamp', '<', endDate)
             .orderBy('timestamp', 'asc')
             .get();
 
@@ -461,11 +461,11 @@ async function loadAdminAttendanceData(month, empId) {
             const startDate = new Date(`${month}-01T00:00:00`);
             const endDate = new Date(startDate);
             endDate.setMonth(endDate.getMonth() + 1);
-            query = query.where('timestamp', ">=", startDate).where('timestamp', "<", endDate);
+            query = query.where('timestamp', '>=', startDate).where('timestamp', '<', endDate);
         }
 
         if (empId) {
-            query = query.where('empId', "==", empId);
+            query = query.where('empId', '==', empId);
         }
 
         const snapshot = await query.orderBy('timestamp', 'desc')
@@ -575,8 +575,8 @@ function renderCalendar(monthStr) {
     const endDateStr = `${monthStr}-${String(lastDay.getDate()).padStart(2, '0')}`;
 
     db.collection('holidays')
-        .where(firebase.firestore.FieldPath.documentId(), ">=", startDateStr)
-        .where(firebase.firestore.FieldPath.documentId(), "<=", endDateStr)
+        .where(firebase.firestore.FieldPath.documentId(), '>=', startDateStr)
+        .where(firebase.firestore.FieldPath.documentId(), '<=', endDateStr)
         .get()
         .then(snapshot => {
             const holidays = {}; // {"YYYY-MM-DD": true}
@@ -809,14 +809,14 @@ async function calculateMonthlyRates(empId) {
 
         // 出勤打刻データ取得
         const attSnapshot = await db.collection('attendance')
-            .where('empId', "==", empId)
-            .where('type', "==", 'in')
+            .where('empId', '==', empId)
+            .where('type', '==', 'in')
             .get();
 
         // 承認済みの有給申請データ取得
         const appsSnapshot = await db.collection('applications')
-            .where('empId', "==", empId)
-            .where('status', "==", 'completed')
+            .where('empId', '==', empId)
+            .where('status', '==', 'completed')
             .get();
 
         const includePaidLeave = document.getElementById('toggle-include-paid-leave').checked;
@@ -1035,9 +1035,9 @@ async function loadEmployeeAttendanceDetail(empId, monthStr) {
 
     try {
         const snapshot = await db.collection('attendance')
-            .where('empId', "==", empId)
-            .where('timestamp', ">=", start)
-            .where('timestamp', "<", end)
+            .where('empId', '==', empId)
+            .where('timestamp', '>=', start)
+            .where('timestamp', '<', end)
             .orderBy('timestamp', 'desc')
             .get();
 
@@ -1186,7 +1186,7 @@ function loadEmployeePendingApplications(empId) {
 
     // 通常の申請を監視
     db.collection('applications')
-        .where('empId', "==", empId)
+        .where('empId', '==', empId)
         .orderBy('createdAt', 'desc')
         .onSnapshot((snapshot) => {
             // 通常申請のHTML生成
@@ -1196,8 +1196,8 @@ function loadEmployeePendingApplications(empId) {
 
     // 打刻修正申請もリアルタイム監視
     db.collection('stampCorrections')
-        .where('empId', "==", empId)
-        .where('status', "==", 'pending')
+        .where('empId', '==', empId)
+        .where('status', '==', 'pending')
         .orderBy('createdAt', 'desc')
         .onSnapshot((corrSnapshot) => {
             // 既存の打刻修正セクションを削除
@@ -1302,10 +1302,10 @@ function loadEmployeeCompletedApplications(empId, filterType, filterValue) {
     }
 
     db.collection('applications')
-        .where('empId', "==", empId)
-        .where('status', "==", 'completed')
-        .where('date', ">=", start)
-        .where('date', "<=", end)
+        .where('empId', '==', empId)
+        .where('status', '==', 'completed')
+        .where('date', '>=', start)
+        .where('date', '<=', end)
         .orderBy('date', 'desc')
         .get()
         .then((snapshot) => {
@@ -1428,7 +1428,7 @@ async function loadEmployeeLeaveManagement(empId) {
     try {
         // 1. 付与履歴を取得
         const grantsSnapshot = await db.collection('leaveGrants')
-            .where('empId', "==", empId)
+            .where('empId', '==', empId)
             .orderBy('grantDate', 'asc')
             .get();
 
@@ -1441,8 +1441,8 @@ async function loadEmployeeLeaveManagement(empId) {
 
         // 2. 使用済み申請を取得 (有給・半休、ステータス=completed)
         const appsSnapshot = await db.collection('applications')
-            .where('empId', "==", empId)
-            .where('status', "==", 'completed')
+            .where('empId', '==', empId)
+            .where('status', '==', 'completed')
             .get();
 
         let totalUsedDays = 0;
@@ -1542,8 +1542,8 @@ document.getElementById('btn-grant-leave').addEventListener('click', async () =>
         });
 
         // フォームクリア
-        document.getElementById('grant-amount').value = "";
-        document.getElementById('grant-note').value = "";
+        document.getElementById('grant-amount').value = '';
+        document.getElementById('grant-note').value = '';
 
         // 再読み込み
         loadEmployeeLeaveManagement(currentDetailEmpId);
@@ -1643,8 +1643,8 @@ async function calculateAllEmployeeRates() {
         // 全従業員のデータを並列取得
         const results = await Promise.all(visibleEmployees.map(async (emp) => {
             const attSnapshot = await db.collection('attendance')
-                .where('empId', "==", emp.id)
-                .where('type', "==", 'in')
+                .where('empId', '==', emp.id)
+                .where('type', '==', 'in')
                 .get();
 
             const attendedDays = new Set();
@@ -1656,8 +1656,8 @@ async function calculateAllEmployeeRates() {
             });
 
             const appsSnapshot = await db.collection('applications')
-                .where('empId', "==", emp.id)
-                .where('status', "==", 'completed')
+                .where('empId', '==', emp.id)
+                .where('status', '==', 'completed')
                 .get();
 
             const paidLeaveDays = new Map();
@@ -2051,7 +2051,7 @@ function loadStampCorrections() {
 
     // 未処理申請リスナー
     correctionUnsubscribe = db.collection('stampCorrections')
-        .where('status', "==", 'pending')
+        .where('status', '==', 'pending')
         .orderBy('createdAt', 'desc')
         .onSnapshot(snapshot => {
             pendingList.innerHTML = '';
@@ -2192,7 +2192,7 @@ function updateCorrectionBadge(count) {
 // 管理者画面の打刻データ管理に遷移した時、未処理件数を表示するためのリスナーを起動
 function initCorrectionBadgeListener() {
     db.collection('stampCorrections')
-        .where('status', "==", 'pending')
+        .where('status', '==', 'pending')
         .onSnapshot(snapshot => {
             updateCorrectionBadge(snapshot.size);
         }, error => {
@@ -2230,7 +2230,7 @@ async function loadDetailMissingCheckoutAlert(empId) {
     try {
         // 該当従業員の全打刻データを取得
         const snapshot = await db.collection('attendance')
-            .where('empId', "==", empId)
+            .where('empId', '==', empId)
             .orderBy('timestamp', 'asc')
             .get();
 
@@ -2301,8 +2301,8 @@ function loadMissingCheckoutAlert() {
     yesterday.setDate(yesterday.getDate() - 1);
 
     const unsub = db.collection('attendance')
-        .where('timestamp', ">=", yesterday)
-        .where('timestamp', "<", today)
+        .where('timestamp', '>=', yesterday)
+        .where('timestamp', '<', today)
         .orderBy('timestamp', 'asc')
         .onSnapshot(snapshot => {
             // 従業員ごとの最終打刻状態を集計
@@ -2357,7 +2357,7 @@ function loadPendingAppsAlert() {
     if (!card) return;
 
     const unsub = db.collection('applications')
-        .where('status', "==", 'pending')
+        .where('status', '==', 'pending')
         .orderBy('createdAt', 'desc')
         .onSnapshot(snapshot => {
             if (!snapshot.empty) {
@@ -2395,7 +2395,7 @@ function loadPendingCorrectionsAlert() {
     if (!card) return;
 
     const unsub = db.collection('stampCorrections')
-        .where('status', "==", 'pending')
+        .where('status', '==', 'pending')
         .orderBy('createdAt', 'desc')
         .onSnapshot(snapshot => {
             if (!snapshot.empty) {
@@ -2467,9 +2467,9 @@ async function loadErrorLogs() {
         let query = db.collection('errorLogs').orderBy('timestamp', 'desc').limit(100);
 
         if (filterVal === 'unresolved') {
-            query = query.where('resolved', "==", false);
+            query = query.where('resolved', '==', false);
         } else if (filterVal === 'resolved') {
-            query = query.where('resolved', "==", true);
+            query = query.where('resolved', '==', true);
         }
 
         const snapshot = await query.get();
@@ -2567,7 +2567,7 @@ async function markErrorResolved(docId) {
 // 解決済みエラーを一括削除
 document.getElementById('btn-delete-resolved-logs').addEventListener('click', async () => {
     const snapshot = await db.collection('errorLogs')
-        .where('resolved', "==", true)
+        .where('resolved', '==', true)
         .get();
 
     if (snapshot.empty) {
