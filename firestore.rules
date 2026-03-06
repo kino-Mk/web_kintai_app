@@ -21,7 +21,7 @@ service cloud.firestore {
     match /applications/{applicationId} {
       allow read, delete: if true;
       allow create, update: if request.resource.data.empId is string
-                            && request.resource.data.status in ['pending', 'approved', 'rejected'];
+                            && request.resource.data.status in ['pending', 'approved', 'rejected', 'completed'];
     }
 
     // 休日カレンダーデータ
@@ -34,7 +34,7 @@ service cloud.firestore {
     match /leaveGrants/{grantId} {
       allow read, delete: if true;
       allow create, update: if request.resource.data.empId is string
-                            && request.resource.data.days is number;
+                            && (request.resource.data.days is number || request.resource.data.days is string);
     }
 
     // システム設定
@@ -54,7 +54,7 @@ service cloud.firestore {
     match /stampCorrections/{correctionId} {
       allow read, delete: if true;
       allow create, update: if request.resource.data.empId is string
-                            && request.resource.data.status in ['pending', 'approved', 'rejected'];
+                            && request.resource.data.status in ['pending', 'approved', 'rejected', 'completed'];
     }
 
     // エラーログ
