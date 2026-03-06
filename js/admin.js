@@ -1279,7 +1279,7 @@ function renderPendingSection(container, empId, pendingDocs) {
 }
 
 // 個別の処理済み申請の読み込み (従業員詳細用)
-function loadEmployeeCompletedApplications(empId, filterType, filterValue) {
+async function loadEmployeeCompletedApplications(empId, filterType, filterValue) {
     const container = document.getElementById('detail-completed-apps');
     if (!container) return;
 
@@ -1301,39 +1301,44 @@ function loadEmployeeCompletedApplications(empId, filterType, filterValue) {
         end = filterValue + "-12-31";
     }
 
-    db.collection('applications')
-        .where('empId', '==', empId)
-        .where('status', '==', 'completed')
-        .where('date', '>=', start)
-        .where('date', '<=', end)
-        .orderBy('date', 'desc')
-        .get()
-        .then((snapshot) => {
-            container.innerHTML = "";
-            if (snapshot.empty) {
-                container.innerHTML = "<p class='loading-text'>履歴はありません。</p>";
-                return;
-            }
+    try {
+        const snapshot = await db.collection('applications')
+            .where('empId', '==', empId)
+            .where('status', '==', 'completed')
+            .where('date', '>=', start)
+            .where('date', '<=', end)
+            .orderBy('date', 'desc')
+            .get();
 
-            snapshot.forEach(doc => {
-                const data = doc.data();
-                const div = document.createElement('div');
-                div.className = 'application-item';
-                div.style.marginBottom = '10px';
-                div.style.borderLeft = '4px solid #5cb85c';
-                div.innerHTML = `
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                        <div>
-                            <div><strong>${data.type}</strong></div>
-                            <div style="font-size: 0.85rem; color: #666;">対象日: ${data.date}</div>
-                            <div style="font-size: 0.8rem;">理由: ${data.reason || 'なし'}</div>
-                        </div>
-                        <button onclick="deleteCompletedApplicationForDetail('${doc.id}', '${empId}', '${filterType}', '${filterValue}')" class="btn-danger" style="padding: 2px 6px; font-size: 10px;">削除</button>
+        container.innerHTML = "";
+        if (snapshot.empty) {
+            container.innerHTML = "<p class='loading-text'>履歴はありません。</p>";
+            return;
+        }
+
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            const div = document.createElement('div');
+            div.className = 'application-item';
+            div.style.marginBottom = '10px';
+            div.style.borderLeft = '4px solid #5cb85c';
+            div.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div>
+                        <div><strong>${data.type}</strong></div>
+                        <div style="font-size: 0.85rem; color: #666;">対象日: ${data.date}</div>
+                        <div style="font-size: 0.8rem;">理由: ${data.reason || 'なし'}</div>
                     </div>
-                `;
-                container.appendChild(div);
-            });
+                    <button onclick="deleteCompletedApplicationForDetail('${doc.id}', '${empId}', '${filterType}', '${filterValue}')" class="btn-danger" style="padding: 2px 6px; font-size: 10px;">削除</button>
+                </div>
+            `;
+            container.appendChild(div);
         });
+    } catch (error) {
+        console.error('Error loading employee completed applications:', error);
+        if (typeof reportError === 'function') reportError(error, 'Error loading employee completed applications:');
+        container.innerHTML = "<p class='loading-text'>データの読み込みに失敗しました</p>";
+    }
 }
 
 // 申請履歴の年度セレクターを生成
@@ -1357,9 +1362,14 @@ function updateDetailYearSelector() {
 // 詳細画面からの削除後にリストを更新するためのラッパー
 async function deleteCompletedApplicationForDetail(docId, empId, filterType, filterValue) {
     if (!(await showConfirm('この申請データを削除しますか？'))) return;
-    db.collection('applications').doc(docId).delete().then(() => {
-        loadEmployeeCompletedApplications(empId, filterType, filterValue);
-    });
+    try {
+        await db.collection('applications').doc(docId).delete();
+        await loadEmployeeCompletedApplications(empId, filterType, filterValue);
+    } catch (error) {
+        console.error('Delete application error:', error);
+        if (typeof reportError === 'function') reportError(error, 'Delete application error:');
+        await showAlert('削除に失敗しました: ' + error.message);
+    }
 }
 
 // 申請履歴のフィルター種別切替

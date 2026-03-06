@@ -1,4 +1,4 @@
-const CACHE_NAME = 'attendance-v46';
+const CACHE_NAME = 'kintai-app-v47';
 const ASSETS = [
     './',
     './index.html',

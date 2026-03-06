@@ -34,6 +34,7 @@ function initAttendanceTracker() {
             }
         }, (error) => {
             console.error('Attendance Tracker Error:', error);
+            if (typeof reportError === 'function') reportError(error, 'Attendance Tracker Error:');
         });
 }
 
@@ -102,6 +103,7 @@ async function handleStamp(type) {
         showScreen('selection');
     } catch (error) {
         console.error('Error stamping:', error);
+        if (typeof reportError === 'function') reportError(error, 'Error stamping:');
         await showAlert("打刻に失敗しました: " + error.message);
     }
 }
@@ -197,6 +199,7 @@ document.getElementById('btn-submit-application').addEventListener('click', asyn
         showScreen('selection');
     } catch (error) {
         console.error('Error submitting application:', error);
+        if (typeof reportError === 'function') reportError(error, 'Error submitting application:');
         await showAlert("申請に失敗しました: " + error.message);
     }
 });
@@ -292,6 +295,7 @@ async function updatePaidLeaveDisplay(empId) {
 
     } catch (error) {
         console.error('Error fetching paid leave details:', error);
+        if (typeof reportError === 'function') reportError(error, 'Error fetching paid leave details:');
         infoDiv.textContent = "残日数読み込みエラー";
     }
 }
@@ -320,6 +324,7 @@ function loadTodayHistoryAll() {
             });
         }, (error) => {
             console.error('Error loading all history:', error);
+            if (typeof reportError === 'function') reportError(error, 'Error loading all history:');
             list.innerHTML = "<li>読み込みエラー</li>";
         });
 }
@@ -348,6 +353,7 @@ function loadTodayHistoryPersonal(empId) {
             });
         }, (error) => {
             console.error('Error loading personal history:', error);
+            if (typeof reportError === 'function') reportError(error, 'Error loading personal history:');
             list.innerHTML = "<li>読み込みエラー: インデックスが必要な可能性があります</li>";
             // 複合クエリ (empId + timestamp range) はFirestoreでインデックスが必要になる場合があります
             // コンソールにリンクが表示されるので作成してください
@@ -483,6 +489,7 @@ async function openStampCorrectionModal() {
         });
     } catch (error) {
         console.error('Error loading stamps for correction:', error);
+        if (typeof reportError === 'function') reportError(error, 'Error loading stamps for correction:');
         listContainer.innerHTML = '<p style="color: var(--danger-color);">読み込みに失敗しました</p>';
     }
 }
@@ -541,6 +548,7 @@ document.getElementById('btn-correction-submit').addEventListener('click', async
         document.getElementById('stamp-correction-modal').classList.add('hidden');
     } catch (error) {
         console.error('Stamp correction request error:', error);
+        if (typeof reportError === 'function') reportError(error, 'Stamp correction request error:');
         await showAlert("申請に失敗しました: " + error.message);
     }
 });

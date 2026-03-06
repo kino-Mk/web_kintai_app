@@ -207,7 +207,7 @@
             </div>
 
             <!-- 従業員切替セレクター (常に表示) -->
-            <div class="card mb-15" style="padding: 10px 16px;">
+            <div class="card mb-15 p-10">
                 <div class="flex-row gap-10 align-center flex-wrap">
                     <label for="detail-emp-switcher" class="fs-09 fw-bold">従業員を切り替える:</label>
                     <select id="detail-emp-switcher" class="w-auto m-0 mw-200">
@@ -272,7 +272,7 @@
                         </div>
                         <div class="form-group-row">
                             <label>有給残数</label>
-                            <span id="detail-emp-leave-display" class="val-badge fw-bold" style="font-size: 1.1rem;">--
+                            <span id="detail-emp-leave-display" class="val-badge fw-bold fs-11">--
                                 日</span>
                             <input type="hidden" id="detail-emp-leave">
                         </div>
@@ -303,23 +303,22 @@
                 <div class="card">
                     <h3 class="section-title-sub">🕒 打刻データの管理</h3>
 
-                    <div id="detail-att-add-form" class="mb-20 p-15 border-radius-8 border-dashed-ced4da"
-                        style="background: #f9f9fb;">
+                    <div id="detail-att-add-form" class="mb-20 p-15 border-radius-8 border-dashed-ced4da bg-lighter">
                         <h4 class="mb-10 fs-09">打刻の手動追加</h4>
                         <div class="flex-row gap-8 align-flex-end flex-wrap">
                             <div class="flex-1 mw-160">
-                                <label style="font-size: 0.75rem;">日時</label>
+                                <label class="fs-075">日時</label>
                                 <input type="datetime-local" id="add-att-datetime" class="p-6">
                             </div>
                             <div class="w-80">
-                                <label style="font-size: 0.75rem;">種別</label>
+                                <label class="fs-075">種別</label>
                                 <select id="add-att-type" class="p-6">
                                     <option value="in">出勤</option>
                                     <option value="out">退勤</option>
                                 </select>
                             </div>
                             <div class="flex-2 mw-150">
-                                <label style="font-size: 0.75rem;">備考</label>
+                                <label class="fs-075">備考</label>
                                 <input type="text" id="add-att-remark" placeholder="修正理由など" class="p-6">
                             </div>
                             <button id="btn-add-att-manual" class="btn-primary fs-09 w-auto px-15-py-8">追加</button>

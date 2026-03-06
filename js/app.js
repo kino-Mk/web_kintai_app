@@ -273,6 +273,7 @@ document.getElementById('btn-reset-send').addEventListener('click', async () => 
         }
     } catch (error) {
         console.error('Reset request error:', error);
+        if (typeof reportError === 'function') reportError(error, 'Reset request error:');
         statusMsg.textContent = 'エラーが発生しました: ' + error.message;
         statusMsg.style.background = '#f8d7da';
         statusMsg.style.color = '#721c24';
