@@ -26,6 +26,37 @@ const ATT_TYPE = {
     OUT: 'out'
 };
 
+// --- コンソール履歴の保存 (エラー調査用) ---
+window._consoleHistory = [];
+const MAX_CONSOLE_HISTORY = 50;
+
+function _interceptConsole(method) {
+    const original = console[method];
+    console[method] = function () {
+        try {
+            const timestamp = new Date().toISOString();
+            const args = Array.from(arguments);
+            let msg = args.map(arg => {
+                if (arg instanceof Error) {
+                    return arg.message + (arg.stack ? '\n' + arg.stack : '');
+                } else if (typeof arg === 'object') {
+                    try { return JSON.stringify(arg); } catch (e) { return String(arg); }
+                }
+                return String(arg);
+            }).join(' ');
+
+            window._consoleHistory.push(`[${timestamp}] [${method.toUpperCase()}] ${msg}`);
+            if (window._consoleHistory.length > MAX_CONSOLE_HISTORY) {
+                window._consoleHistory.shift();
+            }
+        } catch (e) {
+            // インターセプト側でエラーが出ても元の処理は止めない
+        }
+        original.apply(console, arguments);
+    };
+}
+['log', 'info', 'warn', 'error'].forEach(_interceptConsole);
+
 /**
  * Dateオブジェクトを YYYY-MM-DD 形式の文字列に変換
  * @param {Date} date 
@@ -300,7 +331,8 @@ function reportError(error, context = '') {
             userAgent: navigator.userAgent,
             url: window.location.href,
             timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-            resolved: false
+            resolved: false,
+            consoleLogs: window._consoleHistory ? window._consoleHistory.slice() : []
         }).catch(() => { /* Firestore書き込み失敗は無視 */ });
 
     } catch (_) {

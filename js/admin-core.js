@@ -630,6 +630,11 @@ async function loadErrorLogs() {
                         <strong>スタックトレース:</strong>
                         <pre style="white-space: pre-wrap; word-break: break-all; margin: 5px 0; padding: 8px; background: #f1f1f1; border-radius: 4px; max-height: 200px; overflow-y: auto; font-size: 0.75rem;">${escapeHtml(data.stack || '(なし)')}</pre>
                     </div>
+                    ${data.consoleLogs && data.consoleLogs.length > 0 ? `
+                    <div style="margin-bottom: 8px;">
+                        <strong>直近のコンソールログ:</strong>
+                        <pre style="white-space: pre-wrap; word-break: break-all; margin: 5px 0; padding: 8px; background: #222; color: #0f0; border-radius: 4px; max-height: 200px; overflow-y: auto; font-size: 0.75rem;">${escapeHtml(data.consoleLogs.join('\\n'))}</pre>
+                    </div>` : ''}
                     <div style="margin-bottom: 4px;"><strong>URL:</strong> ${escapeHtml(data.url || '不明')}</div>
                     <div><strong>ブラウザ:</strong> ${escapeHtml(data.userAgent || '不明')}</div>
                 </div>
