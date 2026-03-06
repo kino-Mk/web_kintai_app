@@ -2298,38 +2298,56 @@ async function loadDetailMissingCheckoutAlert(empId) {
     }
 }
 
-// 打刻漏れ検出（前日に出勤して退勤していない従業員）
+// 打刻漏れ検出（過去7日間で出勤して退勤していない従業員）
 function loadMissingCheckoutAlert() {
     const card = document.getElementById('alert-missing-checkout');
     const list = document.getElementById('alert-missing-list');
     const badge = document.getElementById('alert-missing-badge');
     if (!card) return;
 
-    // 前日の範囲を計算
+    // 過去7日間の範囲を計算
     const today = getStartOfToday();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
+    const past = new Date(today);
+    past.setDate(past.getDate() - 7);
 
     const unsub = db.collection('attendance')
-        .where('timestamp', '>=', yesterday)
+        .where('timestamp', '>=', past)
         .where('timestamp', '<', today)
         .orderBy('timestamp', 'asc')
         .onSnapshot(snapshot => {
-            // 従業員ごとの最終打刻状態を集計
-            const lastState = {};
+            // 日次・従業員ごとの最終打刻状態を集計
+            const dailyStates = {};
             snapshot.forEach(doc => {
                 const data = doc.data();
-                lastState[data.empId] = {
+                const time = toDate(data.timestamp);
+                const dateStr = time.getFullYear() + '-' + String(time.getMonth() + 1).padStart(2, '0') + '-' + String(time.getDate()).padStart(2, '0');
+
+                if (!dailyStates[data.empId]) dailyStates[data.empId] = {};
+                dailyStates[data.empId][dateStr] = {
                     type: data.type,
                     name: data.empName || data.empId,
-                    time: toDate(data.timestamp)
+                    time: time
                 };
             });
 
-            // 最終打刻が「出勤」のままの従業員を抽出
-            const missing = Object.entries(lastState)
-                .filter(([, info]) => info.type === 'in')
-                .map(([empId, info]) => ({ empId, ...info }));
+            // 同日内で最終打刻が「出勤」のままのものを抽出
+            const missing = [];
+            for (const empId in dailyStates) {
+                for (const dateStr in dailyStates[empId]) {
+                    const info = dailyStates[empId][dateStr];
+                    if (info.type === 'in') {
+                        missing.push({
+                            empId: empId,
+                            name: info.name,
+                            dateStr: dateStr,
+                            time: info.time
+                        });
+                    }
+                }
+            }
+
+            // 日時が新しい順にソート
+            missing.sort((a, b) => b.time - a.time);
 
             if (missing.length > 0) {
                 card.classList.remove('hidden');
@@ -2339,8 +2357,10 @@ function loadMissingCheckoutAlert() {
                     const item = document.createElement('div');
                     item.className = 'alert-item';
                     item.style.cursor = 'pointer';
+                    // MM/DD 形式で日付を表示
+                    const displayDate = emp.dateStr.slice(5).replace('-', '/');
                     item.innerHTML = `
-                        <span class="alert-item-name">${emp.name}</span>
+                        <span class="alert-item-name">${emp.name} (${displayDate})</span>
                         <span class="alert-item-detail">出勤: ${formatTime(emp.time)} — 退勤未打刻</span>
                     `;
                     // クリックで該当従業員の詳細画面へ遷移
