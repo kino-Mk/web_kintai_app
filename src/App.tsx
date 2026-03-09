@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { ModalProvider, useModal } from './contexts/ModalContext'
+import { useModal } from './contexts/ModalContext'
 import { Layout } from './components/Layout'
 import { initConsoleIntercept, reportError } from './utils'
 import { EmployeeSelection } from './components/EmployeeSelection'
@@ -93,7 +93,7 @@ function App() {
     };
 
     return (
-        <ModalProvider>
+        <>
             <Layout activeScreen={activeScreen} onNavigate={handleNavigate} isAdmin={isAdmin}>
                 <div className="space-y-6">
                     {activeScreen === 'selection' && (
@@ -180,7 +180,7 @@ function App() {
             {isAdmin && !isAdminUnlocked && activeScreen.startsWith('admin-') && (
                 <AdminLock onUnlock={() => setIsAdminUnlocked(true)} />
             )}
-        </ModalProvider>
+        </>
     )
 }
 
