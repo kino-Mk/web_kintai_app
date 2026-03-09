@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useModal } from './contexts/ModalContext'
+
 import { Layout } from './components/Layout'
 import { initConsoleIntercept, reportError } from './utils'
 import { EmployeeSelection } from './components/EmployeeSelection'
@@ -12,6 +12,8 @@ import { AdminSettings } from './components/AdminSettings'
 import { AdminCalendar } from './components/AdminCalendar'
 import { AdminLock } from './components/AdminLock'
 import { AdminDashboard } from './components/AdminDashboard'
+import { PasswordModal } from './components/PasswordModal'
+import { ResetPasswordScreen } from './components/ResetPasswordScreen'
 import { Settings } from 'lucide-react';
 import { Employee, COLLECTIONS, AttendanceRecord } from './types'
 import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore'
@@ -23,19 +25,23 @@ function App() {
     const [isAdmin, setIsAdmin] = useState(false);
     const [isAdminUnlocked, setIsAdminUnlocked] = useState(false);
     const [currentEmployee, setCurrentEmployee] = useState<Employee | null>(null);
+    const [pendingEmployee, setPendingEmployee] = useState<Employee | null>(null);
     const [attendanceStates, setAttendanceStates] = useState<Record<string, 'in' | 'out'>>({});
-    const { showAlert } = useModal();
+    const [resetToken, setResetToken] = useState<string | null>(null);
 
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
     useEffect(() => {
         initConsoleIntercept();
 
-        // URLパラメータで管理モード判定
+        // URLパラメータで判定
         const params = new URLSearchParams(window.location.search);
         if (params.get('mode') === 'admin') {
             setIsAdmin(true);
             setActiveScreen('admin-dashboard');
+        } else if (params.get('token')) {
+            setResetToken(params.get('token'));
+            setActiveScreen('reset-password');
         }
 
         // 本日の出勤状態をリアルタイム追跡
@@ -72,25 +78,40 @@ function App() {
 
     const handleSelectEmployee = async (emp: Employee) => {
         if (isMobile) {
-            // モバイルの場合はパスワードチェック（簡易プロンプト）
-            // レガシー同様の挙動をするため、ModalProvider経由でパスワード入力を求める
-            // ここでは簡易的に confirm (prompt代わり) またはカスタム入力が必要だが
-            // まずはステータスをセットして遷移
-            // TODO: より詳細なパスワードモーダルを実装する場合は別途コンポーネント化
-            const pass = prompt(`${emp.name} さんのパスワードを入力してください`);
-            if (pass !== emp.password) {
-                await showAlert('パスワードが正しくありません');
-                return;
-            }
+            setPendingEmployee(emp);
+        } else {
+            setCurrentEmployee(emp);
+            setActiveScreen('timeStamp');
         }
-        setCurrentEmployee(emp);
-        setActiveScreen('timeStamp');
+    };
+
+    const handlePasswordSuccess = () => {
+        if (pendingEmployee) {
+            setCurrentEmployee(pendingEmployee);
+            setPendingEmployee(null);
+            setActiveScreen('timeStamp');
+        }
     };
 
     const handleBackToSelection = () => {
         setCurrentEmployee(null);
         setActiveScreen('selection');
     };
+
+    if (activeScreen === 'reset-password' && resetToken) {
+        return (
+            <ResetPasswordScreen
+                token={resetToken}
+                onHome={() => {
+                    const url = new URL(window.location.href);
+                    url.searchParams.delete('token');
+                    window.history.replaceState({}, '', url);
+                    setResetToken(null);
+                    setActiveScreen('selection');
+                }}
+            />
+        );
+    }
 
     return (
         <>
@@ -112,6 +133,7 @@ function App() {
                             employee={currentEmployee}
                             onBack={handleBackToSelection}
                             onComplete={() => setActiveScreen('selection')}
+                            onGoApplication={() => setActiveScreen('application')}
                         />
                     )}
 
@@ -179,6 +201,14 @@ function App() {
             </Layout>
             {isAdmin && !isAdminUnlocked && activeScreen.startsWith('admin-') && (
                 <AdminLock onUnlock={() => setIsAdminUnlocked(true)} />
+            )}
+
+            {pendingEmployee && (
+                <PasswordModal
+                    employee={pendingEmployee}
+                    onSuccess={handlePasswordSuccess}
+                    onClose={() => setPendingEmployee(null)}
+                />
             )}
         </>
     )

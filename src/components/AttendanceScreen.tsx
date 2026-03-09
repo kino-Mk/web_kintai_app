@@ -10,14 +10,17 @@ interface Props {
     employee: Employee;
     onBack: () => void;
     onComplete?: () => void;
+    onGoApplication?: () => void;
 }
 
-export const AttendanceScreen: React.FC<Props> = ({ employee, onBack, onComplete }) => {
+export const AttendanceScreen: React.FC<Props> = ({ employee, onBack, onComplete, onGoApplication }) => {
     const [now, setNow] = useState(new Date());
     const [records, setRecords] = useState<AttendanceRecord[]>([]);
     const [remark, setRemark] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const { showAlert, showConfirm } = useModal();
+
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
     // 時計の更新
     useEffect(() => {
@@ -96,34 +99,51 @@ export const AttendanceScreen: React.FC<Props> = ({ employee, onBack, onComplete
                     <p className="text-gray-400">{now.toLocaleDateString('ja-JP', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
                 </div>
 
-                <div className="flex flex-col md:flex-row gap-4 mb-8">
-                    <button
-                        onClick={() => handleStamp('in')}
-                        disabled={isSubmitting}
-                        className="flex-1 bg-primary text-white p-6 rounded-2xl shadow-lg hover:shadow-xl hover:bg-primary-dark transition-all disabled:opacity-50 flex items-center justify-center gap-3 text-xl font-bold active:scale-95"
-                    >
-                        <Play size={24} fill="currentColor" />
-                        出勤
-                    </button>
-                    <button
-                        onClick={() => handleStamp('out')}
-                        disabled={isSubmitting}
-                        className="flex-1 bg-white border-2 border-primary text-primary p-6 rounded-2xl hover:bg-primary-light transition-all disabled:opacity-50 flex items-center justify-center gap-3 text-xl font-bold active:scale-95"
-                    >
-                        <Square size={24} fill="currentColor" />
-                        退勤
-                    </button>
-                </div>
+                {isMobile ? (
+                    <div className="mb-8 bg-gray-50 p-6 rounded-2xl border border-gray-100">
+                        <p className="text-gray-600 font-bold mb-4">
+                            スマートフォンからは打刻できません。<br />
+                            勤怠や休暇の登録は申請メニューから行ってください。
+                        </p>
+                        <button
+                            onClick={onGoApplication}
+                            className="w-full bg-primary text-white p-4 rounded-xl font-bold shadow-lg shadow-primary/30 active:scale-95 transition-all"
+                        >
+                            各種申請メニューへ
+                        </button>
+                    </div>
+                ) : (
+                    <>
+                        <div className="flex flex-col md:flex-row gap-4 mb-8">
+                            <button
+                                onClick={() => handleStamp('in')}
+                                disabled={isSubmitting}
+                                className="flex-1 bg-primary text-white p-6 rounded-2xl shadow-lg hover:shadow-xl hover:bg-primary-dark transition-all disabled:opacity-50 flex items-center justify-center gap-3 text-xl font-bold active:scale-95"
+                            >
+                                <Play size={24} fill="currentColor" />
+                                出勤
+                            </button>
+                            <button
+                                onClick={() => handleStamp('out')}
+                                disabled={isSubmitting}
+                                className="flex-1 bg-white border-2 border-primary text-primary p-6 rounded-2xl hover:bg-primary-light transition-all disabled:opacity-50 flex items-center justify-center gap-3 text-xl font-bold active:scale-95"
+                            >
+                                <Square size={24} fill="currentColor" />
+                                退勤
+                            </button>
+                        </div>
 
-                <div className="relative">
-                    <textarea
-                        value={remark}
-                        onChange={(e) => setRemark(e.target.value)}
-                        placeholder="備考欄（任意：外出、遅刻理由など）"
-                        className="w-full p-4 pl-12 rounded-xl bg-gray-50 border-none focus:ring-2 focus:ring-primary h-24 resize-none transition-all"
-                    />
-                    <MessageSquare className="absolute left-4 top-4 text-gray-300" size={20} />
-                </div>
+                        <div className="relative">
+                            <textarea
+                                value={remark}
+                                onChange={(e) => setRemark(e.target.value)}
+                                placeholder="備考欄（任意：外出、遅刻理由など）"
+                                className="w-full p-4 pl-12 rounded-xl bg-gray-50 border-none focus:ring-2 focus:ring-primary h-24 resize-none transition-all"
+                            />
+                            <MessageSquare className="absolute left-4 top-4 text-gray-300" size={20} />
+                        </div>
+                    </>
+                )}
             </div>
 
             <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
