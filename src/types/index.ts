@@ -17,6 +17,9 @@ export type ApplicationStatus = 'pending' | 'approved' | 'rejected' | 'completed
 export interface Employee {
     id: string;
     name: string;
+    password?: string;
+    email?: string;
+    paidLeave?: number;
     docId?: string;
     isHidden?: boolean;
 }

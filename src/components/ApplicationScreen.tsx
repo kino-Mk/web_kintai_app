@@ -9,9 +9,10 @@ import { useModal } from '../contexts/ModalContext';
 interface Props {
     employee: Employee;
     onBack: () => void;
+    onComplete?: () => void;
 }
 
-export const ApplicationScreen: React.FC<Props> = ({ employee, onBack }) => {
+export const ApplicationScreen: React.FC<Props> = ({ employee, onBack, onComplete }) => {
     const [type, setType] = useState('有給');
     const [date, setDate] = useState('');
     const [startTime, setStartTime] = useState('');
@@ -91,7 +92,8 @@ export const ApplicationScreen: React.FC<Props> = ({ employee, onBack }) => {
             });
 
             await showAlert('申請しました。');
-            onBack();
+            if (onComplete) onComplete();
+            else onBack();
         } catch (error: any) {
             await showAlert(`申請に失敗しました: ${error.message}`);
         } finally {

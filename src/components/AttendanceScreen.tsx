@@ -9,9 +9,10 @@ import { useModal } from '../contexts/ModalContext';
 interface Props {
     employee: Employee;
     onBack: () => void;
+    onComplete?: () => void;
 }
 
-export const AttendanceScreen: React.FC<Props> = ({ employee, onBack }) => {
+export const AttendanceScreen: React.FC<Props> = ({ employee, onBack, onComplete }) => {
     const [now, setNow] = useState(new Date());
     const [records, setRecords] = useState<AttendanceRecord[]>([]);
     const [remark, setRemark] = useState('');
@@ -68,6 +69,7 @@ export const AttendanceScreen: React.FC<Props> = ({ employee, onBack }) => {
 
             setRemark('');
             await showAlert(`${typeLabel}を記録しました。お疲れ様です！`);
+            if (onComplete) onComplete();
         } catch (error: any) {
             console.error("Stamp error:", error);
             await showAlert(`エラーが発生しました: ${error.message}`);
