@@ -11,6 +11,14 @@ export const AdminEmployeeList: React.FC = () => {
     const [isAdding, setIsAdding] = useState(false);
     const [newEmpName, setNewEmpName] = useState('');
     const [newEmpId, setNewEmpId] = useState('');
+    const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
+    const [editForm, setEditForm] = useState({
+        name: '',
+        password: '',
+        email: '',
+        paidLeave: 0,
+        isHidden: false
+    });
     const { showAlert, showConfirm } = useModal();
 
     useEffect(() => {
@@ -65,6 +73,58 @@ export const AdminEmployeeList: React.FC = () => {
             });
         } catch (error: any) {
             await showAlert(`更新に失敗しました: ${error.message}`);
+        }
+    };
+
+    const handleEditClick = (emp: Employee) => {
+        setSelectedEmployee(emp);
+        setEditForm({
+            name: emp.name,
+            password: emp.password || '',
+            email: emp.email || '',
+            paidLeave: emp.paidLeave || 0,
+            isHidden: !!emp.isHidden
+        });
+    };
+
+    const handleSaveEdit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!selectedEmployee) return;
+
+        if (!editForm.name.trim()) {
+            await showAlert('名前を入力してください。');
+            return;
+        }
+
+        try {
+            await updateDoc(doc(db, COLLECTIONS.EMPLOYEES, selectedEmployee.docId || selectedEmployee.id), {
+                name: editForm.name.trim(),
+                password: editForm.password.trim(),
+                email: editForm.email.trim(),
+                paidLeave: Number(editForm.paidLeave),
+                isHidden: editForm.isHidden,
+                updatedAt: serverTimestamp()
+            });
+            await showAlert('従業員情報を更新しました。');
+            setSelectedEmployee(null);
+        } catch (error: any) {
+            await showAlert(`更新に失敗しました: ${error.message}`);
+        }
+    };
+
+    const handleDeleteEmployee = async () => {
+        if (!selectedEmployee) return;
+        if (!(await showConfirm(`${selectedEmployee.name} さんを本当に削除しますか？\n（過去の打刻データは残りますが、一覧からは完全に消去されます）`))) return;
+
+        try {
+            // In a real app we'd delete the doc, but for now we might just hide or actually delete.
+            // The legacy app did an actual delete.
+            const { deleteDoc } = await import('firebase/firestore');
+            await deleteDoc(doc(db, COLLECTIONS.EMPLOYEES, selectedEmployee.docId || selectedEmployee.id));
+            await showAlert('削除しました。');
+            setSelectedEmployee(null);
+        } catch (error: any) {
+            await showAlert(`削除に失敗しました: ${error.message}`);
         }
     };
 
@@ -154,12 +214,16 @@ export const AdminEmployeeList: React.FC = () => {
                                     </td>
                                     <td className="px-6 py-4">
                                         <div className="flex justify-center gap-2">
-                                            <button className="p-2 text-gray-400 hover:text-primary transition-colors">
+                                            <button
+                                                onClick={() => handleEditClick(emp)}
+                                                className="p-2 text-gray-400 hover:text-primary transition-colors"
+                                                title="編集・詳細">
                                                 <Edit2 size={18} />
                                             </button>
                                             <button
                                                 onClick={() => handleToggleHidden(emp)}
                                                 className={`p-2 transition-colors ${emp.isHidden ? 'text-primary hover:text-primary-dark' : 'text-gray-400 hover:text-danger'}`}
+                                                title={emp.isHidden ? '表示にする' : '非表示にする'}
                                             >
                                                 <EyeOff size={18} />
                                             </button>
@@ -171,6 +235,107 @@ export const AdminEmployeeList: React.FC = () => {
                     </table>
                 </div>
             </div>
+
+            {/* 従業員詳細・編集モーダル (インライン表示) */}
+            {selectedEmployee && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+                    <div className="bg-white rounded-3xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
+                        <div className="p-6 border-b border-gray-100 flex justify-between items-center sticky top-0 bg-white/90 backdrop-blur-sm z-10">
+                            <h3 className="text-xl font-bold text-gray-800">
+                                {selectedEmployee.name} ({selectedEmployee.id})
+                            </h3>
+                            <button onClick={() => setSelectedEmployee(null)} className="text-gray-400 hover:text-gray-600 font-bold p-2 bg-gray-50 rounded-full">
+                                ✕
+                            </button>
+                        </div>
+
+                        <div className="p-6">
+                            <form onSubmit={handleSaveEdit} className="space-y-6">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-bold text-gray-600">氏名</label>
+                                        <input
+                                            type="text"
+                                            value={editForm.name}
+                                            onChange={e => setEditForm({ ...editForm, name: e.target.value })}
+                                            className="w-full p-3 rounded-xl bg-gray-50 border-none focus:ring-2 focus:ring-primary"
+                                            required
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-bold text-gray-600">パスワード (モバイル認証用)</label>
+                                        <input
+                                            type="text"
+                                            value={editForm.password}
+                                            onChange={e => setEditForm({ ...editForm, password: e.target.value })}
+                                            className="w-full p-3 rounded-xl bg-gray-50 border-none focus:ring-2 focus:ring-primary"
+                                            placeholder="未設定"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-bold text-gray-600">メールアドレス</label>
+                                        <input
+                                            type="email"
+                                            value={editForm.email}
+                                            onChange={e => setEditForm({ ...editForm, email: e.target.value })}
+                                            className="w-full p-3 rounded-xl bg-gray-50 border-none focus:ring-2 focus:ring-primary"
+                                            placeholder="未設定"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-bold text-gray-600">有給休暇残日数</label>
+                                        <input
+                                            type="number"
+                                            step="0.5"
+                                            value={editForm.paidLeave}
+                                            onChange={e => setEditForm({ ...editForm, paidLeave: parseFloat(e.target.value) || 0 })}
+                                            className="w-full p-3 rounded-xl bg-gray-50 border-none focus:ring-2 focus:ring-primary"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-2 p-4 bg-gray-50 rounded-xl">
+                                    <input
+                                        type="checkbox"
+                                        id="edit-hidden"
+                                        checked={editForm.isHidden}
+                                        onChange={e => setEditForm({ ...editForm, isHidden: e.target.checked })}
+                                        className="w-5 h-5 text-primary rounded border-gray-300 focus:ring-primary"
+                                    />
+                                    <label htmlFor="edit-hidden" className="font-bold text-gray-700 cursor-pointer">
+                                        一覧から非表示にする（退職者など）
+                                    </label>
+                                </div>
+
+                                <div className="flex justify-between items-center pt-6 border-t border-gray-100">
+                                    <button
+                                        type="button"
+                                        onClick={handleDeleteEmployee}
+                                        className="text-danger hover:bg-red-50 px-4 py-2 rounded-xl font-bold transition-colors"
+                                    >
+                                        この従業員を削除
+                                    </button>
+                                    <div className="flex gap-3">
+                                        <button
+                                            type="button"
+                                            onClick={() => setSelectedEmployee(null)}
+                                            className="px-6 py-3 rounded-xl font-bold bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+                                        >
+                                            キャンセル
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            className="px-8 py-3 rounded-xl font-bold bg-primary text-white hover:bg-primary-dark shadow-lg shadow-primary/30 transition-all active:scale-95"
+                                        >
+                                            保存する
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
