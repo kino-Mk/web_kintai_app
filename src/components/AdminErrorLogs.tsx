@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { db } from '../firebase';
-import { collection, query, orderBy, onSnapshot, doc, updateDoc, serverTimestamp, limit } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, doc, updateDoc, deleteDoc, serverTimestamp, limit } from 'firebase/firestore';
 import { ErrorLog, COLLECTIONS } from '../types';
 import { toDate, formatFullDateTime } from '../utils';
-import { AlertCircle, CheckCircle2, Terminal, ChevronDown, ChevronUp, Clock, Globe, User } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Terminal, ChevronDown, ChevronUp, Clock, Globe, User, Trash2 } from 'lucide-react';
 import { useModal } from '../contexts/ModalContext';
 
 export const AdminErrorLogs: React.FC = () => {
@@ -37,6 +37,18 @@ export const AdminErrorLogs: React.FC = () => {
             });
         } catch (error: any) {
             await showAlert(`更新失敗: ${error.message}`);
+        }
+    };
+
+    const handleDeleteLog = async (logId: string) => {
+        if (!(await showConfirm('このエラーログを完全に削除しますか？\n（この操作は元に戻せません）'))) return;
+
+        try {
+            await deleteDoc(doc(db, COLLECTIONS.ERROR_LOGS, logId));
+            await showAlert('エラーログを削除しました。');
+            if (expandedLogId === logId) setExpandedLogId(null);
+        } catch (error: any) {
+            await showAlert(`削除失敗: ${error.message}`);
         }
     };
 
@@ -87,11 +99,18 @@ export const AdminErrorLogs: React.FC = () => {
                                     {!log.resolved && (
                                         <button
                                             onClick={(e) => { e.stopPropagation(); handleResolve(log); }}
-                                            className="px-4 py-2 bg-success-bg text-success text-xs font-bold rounded-xl hover:bg-success hover:text-white transition-all shadow-sm active:scale-95"
+                                            className="px-4 py-2 bg-success-bg text-success text-xs font-bold rounded-xl hover:bg-success hover:text-white transition-all shadow-sm active:scale-95 whitespace-nowrap"
                                         >
                                             解決済みにする
                                         </button>
                                     )}
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); handleDeleteLog(log.id!); }}
+                                        className="p-2 text-gray-400 hover:text-danger hover:bg-danger-bg rounded-xl transition-all shadow-sm flex items-center justify-center"
+                                        title="エラーログを削除"
+                                    >
+                                        <Trash2 size={18} />
+                                    </button>
                                     <div className="text-gray-300">
                                         {expandedLogId === log.id ? <ChevronUp size={24} /> : <ChevronDown size={24} />}
                                     </div>
