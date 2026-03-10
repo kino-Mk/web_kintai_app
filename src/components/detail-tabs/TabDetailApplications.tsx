@@ -141,7 +141,24 @@ export const TabDetailApplications: React.FC<Props> = ({ employee }) => {
             case 'approved': return <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold">一次承認済</span>;
             case 'completed': return <span className="px-2 py-1 bg-success-bg text-success rounded-full text-xs font-bold">処理完了</span>;
             case 'rejected': return <span className="px-2 py-1 bg-red-100 text-red-700 rounded-full text-xs font-bold">却下</span>;
+            case 'canceled': return <span className="px-2 py-1 bg-gray-100 text-gray-500 rounded-full text-xs font-bold">取消</span>;
             default: return null;
+        }
+    };
+
+    const handleUndoApproveApp = async (appId: string, currentStatus: string) => {
+        if (currentStatus !== 'completed' && currentStatus !== 'approved') return;
+        if (!(await showConfirm('この承認済み申請を【取消】状態に戻しますか？\n（有給などの消費日数が元に戻ります）'))) return;
+
+        try {
+            await updateDoc(doc(db, COLLECTIONS.APPLICATIONS, appId), {
+                status: 'canceled', // 従来の「rejected」ではなく、明確に「取消」としたステータスを付与する
+                updatedAt: serverTimestamp()
+            });
+            await showAlert('申請の承認を取り消しました。');
+            fetchApplications();
+        } catch (error: any) {
+            await showAlert(`エラー: ${error.message}`);
         }
     };
 
@@ -267,9 +284,21 @@ export const TabDetailApplications: React.FC<Props> = ({ employee }) => {
                                                 {isCorrection ? formatDateStr(toDate(item.attendanceTime)) : item.date}
                                             </span>
                                         </div>
-                                        <div className="text-xs text-gray-500 truncate max-w-[200px]">
+                                        <div className="text-xs text-gray-500 truncate max-w-[150px] md:max-w-[200px]">
                                             {item.reason}
                                         </div>
+                                        {/* 承認の取消ボタン（打刻修正の場合は元の打刻が消えているため対象外とする） */}
+                                        {!isCorrection && (item.status === 'completed' || item.status === 'approved') && (
+                                            <div className="ml-2">
+                                                <button
+                                                    onClick={() => handleUndoApproveApp(item.id, item.status)}
+                                                    className="px-3 py-1 text-xs font-bold text-gray-500 bg-gray-100 hover:bg-gray-200 hover:text-red-500 rounded-lg transition-colors border border-gray-200"
+                                                    title="承認を取り消す（ステータスをキャンセルに戻す）"
+                                                >
+                                                    取消
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
                                 );
                             })

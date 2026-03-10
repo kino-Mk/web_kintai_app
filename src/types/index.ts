@@ -12,7 +12,7 @@ export const COLLECTIONS = {
 } as const;
 
 export type AttendanceType = 'in' | 'out';
-export type ApplicationStatus = 'pending' | 'approved' | 'rejected' | 'completed';
+export type ApplicationStatus = 'pending' | 'approved' | 'rejected' | 'completed' | 'canceled';
 
 export interface Employee {
     id: string;
