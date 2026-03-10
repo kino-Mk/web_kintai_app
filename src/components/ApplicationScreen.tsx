@@ -60,6 +60,17 @@ export const ApplicationScreen: React.FC<Props> = ({ employee, onBack, onComplet
             return;
         }
 
+        if (['遅刻', '早退', '残業'].includes(type)) {
+            if (type === '遅刻' && !startTime) {
+                await showAlert('出勤時刻を入力してください。');
+                return;
+            }
+            if ((type === '早退' || type === '残業') && !endTime) {
+                await showAlert('退勤時刻を入力してください。');
+                return;
+            }
+        }
+
         if (!(await showConfirm(`${type}の申請を送信しますか？`))) return;
 
         setLoading(true);

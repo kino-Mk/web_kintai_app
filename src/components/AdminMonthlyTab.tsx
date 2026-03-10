@@ -138,6 +138,30 @@ export const AdminMonthlyTab: React.FC = () => {
         }
     };
 
+    const handleExportRawCSV = async () => {
+        try {
+            const snap = await getDocs(query(collection(db, COLLECTIONS.ATTENDANCE), orderBy('timestamp', 'desc')));
+            if (snap.empty) {
+                await showAlert('打刻データがありません。');
+                return;
+            }
+
+            let csvContent = "従業員ID,従業員名,打刻種別,打刻日時\n";
+            snap.forEach(doc => {
+                const data = doc.data() as AttendanceRecord;
+                if (!data.timestamp) return;
+                const dateObj = toDate(data.timestamp);
+                const formattedTime = formatCsvTime(dateObj);
+                csvContent += `${data.empId},${data.empName},${data.type === 'in' ? 1 : 2},${formattedTime}\n`;
+            });
+
+            downloadCSV(csvContent, 'attendance_raw.csv');
+        } catch (error: any) {
+            console.error('Raw Export Error:', error);
+            await showAlert("全件エクスポートに失敗しました: " + error.message);
+        }
+    };
+
     return (
         <div className="space-y-4">
             <div className="flex flex-col md:flex-row justify-between gap-4 bg-gray-50/50 p-4 rounded-2xl border border-gray-100">
@@ -150,13 +174,22 @@ export const AdminMonthlyTab: React.FC = () => {
                         className="px-4 py-2 rounded-xl border-none bg-white shadow-sm focus:ring-2 focus:ring-primary text-sm font-bold"
                     />
                 </div>
-                <button
-                    onClick={handleExportCSV}
-                    className="flex items-center gap-2 bg-white border border-gray-200 text-gray-600 px-6 py-2 rounded-xl text-sm font-bold hover:bg-gray-50 transition-all shadow-sm active:scale-95"
-                >
-                    <Download size={18} />
-                    CSVエクスポート
-                </button>
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={handleExportRawCSV}
+                        className="flex items-center gap-2 bg-white border border-gray-200 text-gray-600 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold hover:bg-gray-50 transition-all shadow-sm active:scale-95 whitespace-nowrap"
+                    >
+                        <Download size={16} />
+                        全件CSV出力
+                    </button>
+                    <button
+                        onClick={handleExportCSV}
+                        className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-xl text-xs sm:text-sm font-bold hover:bg-primary-dark transition-all shadow-sm active:scale-95 whitespace-nowrap"
+                    >
+                        <Download size={16} />
+                        月次CSV出力
+                    </button>
+                </div>
             </div>
 
             <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
