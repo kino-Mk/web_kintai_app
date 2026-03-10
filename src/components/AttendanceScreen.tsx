@@ -55,14 +55,32 @@ export const AttendanceScreen: React.FC<Props> = ({ employee, onBack, onComplete
             return;
         }
 
-        const typeLabel = type === 'in' ? '出勤' : '退勤';
+        const hasIn = records.some(r => r.type === 'in');
+        const hasOut = records.some(r => r.type === 'out');
 
-        // 二重打刻チェック（簡易）
-        if (records.length > 0 && records[0].type === type) {
-            if (!(await showConfirm(`既に${typeLabel} 打刻がありますが、上書き（追加）しますか？`))) {
+        if (type === 'in') {
+            if (hasIn) {
+                await showAlert('既に出勤打刻済みです。');
+                return;
+            }
+            if (hasOut) {
+                await showAlert('本日は既に退勤済みです。');
+                return;
+            }
+        } else if (type === 'out') {
+            if (hasOut) {
+                await showAlert('既に退勤打刻済みです。');
+                return;
+            }
+            if (!hasIn) {
+                await showAlert('出勤打刻がされていません。');
                 return;
             }
         }
+
+        const typeLabel = type === 'in' ? '出勤' : '退勤';
+        const confirmMsg = type === 'in' ? '出勤しますか？' : '退勤しますか？';
+        if (!(await showConfirm(confirmMsg))) return;
 
         try {
             setIsSubmitting(true);
@@ -79,7 +97,7 @@ export const AttendanceScreen: React.FC<Props> = ({ employee, onBack, onComplete
             if (onComplete) onComplete();
         } catch (error: any) {
             console.error("Stamp error:", error);
-            await showAlert(`エラーが発生しました: ${error.message} `);
+            await showAlert(`エラーが発生しました: ${error.message}`);
         } finally {
             setIsSubmitting(false);
         }
