@@ -188,7 +188,7 @@ function App() {
                     )}
 
                     {/* Fallback for other admin screens */}
-                    {activeScreen.startsWith('admin-') && !['admin-employees', 'admin-attendance', 'admin-error-logs'].includes(activeScreen) && (
+                    {activeScreen.startsWith('admin-') && !['admin-dashboard', 'admin-employees', 'admin-attendance', 'admin-rate-overview', 'admin-error-logs', 'admin-settings', 'admin-calendar'].includes(activeScreen) && (
                         <div className="bg-white p-12 rounded-3xl shadow-sm border border-gray-100 text-center">
                             <div className="w-16 h-16 bg-primary-light text-primary rounded-full flex items-center justify-center mx-auto mb-6">
                                 <Settings className="animate-spin-slow" />

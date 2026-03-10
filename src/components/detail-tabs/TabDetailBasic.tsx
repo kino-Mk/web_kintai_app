@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../firebase';
-import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, updateDoc, serverTimestamp, collection, query, where, getDocs } from 'firebase/firestore';
 import { Employee, COLLECTIONS } from '../../types';
 import { useModal } from '../../contexts/ModalContext';
+import { format, subMonths } from 'date-fns';
 
 interface Props {
     employee: Employee;
@@ -22,6 +23,8 @@ export const TabDetailBasic: React.FC<Props> = ({ employee }) => {
     const [totalRate, setTotalRate] = useState<string>('--');
     const [paidLeaveBalance, setPaidLeaveBalance] = useState<number | string>('--');
     const [includePaidLeave, setIncludePaidLeave] = useState(false);
+    const [historyRates, setHistoryRates] = useState<{ month: string, rate: string, rawRate: number }[]>([]);
+    const [isLoadingStats, setIsLoadingStats] = useState(false);
 
     const { showAlert, showConfirm } = useModal();
 
@@ -33,13 +36,118 @@ export const TabDetailBasic: React.FC<Props> = ({ employee }) => {
             isHidden: !!employee.isHidden
         });
 
-        // TODO: Load real attendance rates and leave balance
-        // This will be implemented along with AdminRateOverview logic
-        setMonthRate('実装中');
-        setTotalRate('実装中');
         setPaidLeaveBalance(employee.paidLeave || '--');
-
     }, [employee]);
+
+    useEffect(() => {
+        const fetchStats = async () => {
+            if (!employee.id) return;
+            setIsLoadingStats(true);
+            try {
+                const targetMonths: string[] = [];
+                const now = new Date();
+                for (let i = 5; i >= 0; i--) {
+                    targetMonths.push(format(subMonths(now, i), 'yyyy-MM'));
+                }
+
+                const cycles = targetMonths.map(mStr => {
+                    const [yStr, mNumStr] = mStr.split('-');
+                    const y = parseInt(yStr);
+                    const mo = parseInt(mNumStr);
+                    const start = new Date(y, mo - 2, 21, 0, 0, 0, 0);
+                    const end = new Date(y, mo - 1, 21, 0, 0, 0, 0);
+                    return { month: mStr, start, end };
+                });
+
+                const overallStart = cycles[0].start;
+                const overallEnd = cycles[5].end;
+
+                const qHol = query(
+                    collection(db, COLLECTIONS.HOLIDAYS),
+                    where('date', '>=', format(overallStart, 'yyyy-MM-dd')),
+                    where('date', '<', format(overallEnd, 'yyyy-MM-dd'))
+                );
+                const snapHol = await getDocs(qHol);
+                const holidays = snapHol.docs.map(d => d.data().date as string);
+
+                const qAtt = query(
+                    collection(db, COLLECTIONS.ATTENDANCE),
+                    where('empId', '==', employee.id),
+                    where('timestamp', '>=', overallStart),
+                    where('timestamp', '<', overallEnd)
+                );
+                const snapAtt = await getDocs(qAtt);
+                const attendances = snapAtt.docs.map(d => d.data());
+
+                let applications: any[] = [];
+                if (includePaidLeave) {
+                    const qApps = query(
+                        collection(db, COLLECTIONS.APPLICATIONS),
+                        where('empId', '==', employee.id),
+                        where('status', 'in', ['approved', 'completed'])
+                    );
+                    const snapApps = await getDocs(qApps);
+                    applications = snapApps.docs.map(d => d.data());
+                }
+
+                let totalDaysPresent = 0;
+                let totalWorkingDays = 0;
+                const results = cycles.map(cycle => {
+                    const totalMs = cycle.end.getTime() - cycle.start.getTime();
+                    const totalDaysRaw = Math.round(totalMs / (1000 * 60 * 60 * 24));
+                    const holsInCycle = holidays.filter(h => {
+                        const hd = new Date(h);
+                        return hd >= cycle.start && hd < cycle.end;
+                    }).length;
+                    const workingDays = totalDaysRaw - holsInCycle;
+                    totalWorkingDays += workingDays;
+
+                    const attendedDates = new Set<string>();
+
+                    attendances.forEach(att => {
+                        const d = typeof att.timestamp.toDate === 'function' ? att.timestamp.toDate() : new Date(att.timestamp);
+                        if (d >= cycle.start && d < cycle.end && att.type === 'in') {
+                            attendedDates.add(format(d, 'yyyy-MM-dd'));
+                        }
+                    });
+
+                    if (includePaidLeave) {
+                        applications.forEach(app => {
+                            const d = new Date(app.date);
+                            if (d >= cycle.start && d < cycle.end) {
+                                if (app.type === '有給' || (typeof app.type === 'string' && app.type.startsWith('半休'))) {
+                                    attendedDates.add(app.date);
+                                }
+                            }
+                        });
+                    }
+
+                    const daysPresent = attendedDates.size;
+                    totalDaysPresent += daysPresent;
+
+                    const rawRate = workingDays > 0 ? (daysPresent / workingDays) * 100 : 0;
+                    const rate = Math.min(100, Math.max(0, rawRate)).toFixed(1);
+
+                    return { month: cycle.month, rate, rawRate: parseFloat(rate) };
+                });
+
+                setHistoryRates(results);
+                setMonthRate(results[5].rate + '%');
+
+                const totalRaw = totalWorkingDays > 0 ? (totalDaysPresent / totalWorkingDays) * 100 : 0;
+                setTotalRate(Math.min(100, Math.max(0, totalRaw)).toFixed(1) + '%');
+
+            } catch (error) {
+                console.error("Stats Error:", error);
+                setMonthRate('Error');
+                setTotalRate('Error');
+            } finally {
+                setIsLoadingStats(false);
+            }
+        };
+
+        fetchStats();
+    }, [employee.id, includePaidLeave]);
 
     const handleSave = async () => {
         if (!editForm.name.trim()) {
@@ -110,9 +218,24 @@ export const TabDetailBasic: React.FC<Props> = ({ employee }) => {
 
                 <div>
                     <h4 className="text-sm font-bold text-gray-500 mb-3">直近6ヶ月の推移</h4>
-                    <div className="text-sm text-gray-400 bg-gray-50 p-4 rounded-xl text-center">
-                        詳細な推移データは準備中です...
-                    </div>
+                    {isLoadingStats ? (
+                        <div className="text-sm text-gray-400 bg-gray-50 p-4 rounded-xl text-center">計算中...</div>
+                    ) : (
+                        <div className="flex items-end justify-between bg-gray-50 p-4 rounded-xl h-44 gap-2">
+                            {historyRates.map(item => (
+                                <div key={item.month} className="flex flex-col items-center justify-end flex-1 h-full gap-2">
+                                    <div className="text-[10px] font-bold text-gray-400">{item.rate}%</div>
+                                    <div className="w-full bg-primary/10 rounded-t-sm relative group overflow-hidden" style={{ height: '70%' }}>
+                                        <div
+                                            className={`absolute bottom-0 left-0 right-0 rounded-t-sm transition-all duration-1000 ${item.rawRate < 80 ? 'bg-orange-400' : 'bg-primary'}`}
+                                            style={{ height: `${item.rawRate}%` }}
+                                        />
+                                    </div>
+                                    <div className="text-[10px] text-gray-500 font-bold">{item.month.split('-')[1]}月</div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </div>
 
