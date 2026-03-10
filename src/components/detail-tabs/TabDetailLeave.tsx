@@ -12,6 +12,7 @@ interface Props {
 
 export const TabDetailLeave: React.FC<Props> = ({ employee }) => {
     const [grants, setGrants] = useState<any[]>([]);
+    const [usedApps, setUsedApps] = useState<any[]>([]); // 追加: 消費履歴表示用
     const [usedDays, setUsedDays] = useState(0);
     const [isLoading, setIsLoading] = useState(false);
 
@@ -44,13 +45,23 @@ export const TabDetailLeave: React.FC<Props> = ({ employee }) => {
             );
             const appsSnap = await getDocs(qApps);
             let totalUsed = 0;
+            const appsArr: any[] = []; // 追加
             appsSnap.forEach(d => {
                 const data = d.data();
-                if (data.type === '有給') totalUsed += 1.0;
-                else if (typeof data.type === 'string' && data.type.startsWith('半休')) totalUsed += 0.5;
+                if (data.type === '有給') {
+                    totalUsed += 1.0;
+                    appsArr.push({ id: d.id, ...data, usedDays: 1.0 });
+                } else if (typeof data.type === 'string' && data.type.startsWith('半休')) {
+                    totalUsed += 0.5;
+                    appsArr.push({ id: d.id, ...data, usedDays: 0.5 });
+                }
             });
 
+            // 日付の降順でソート
+            appsArr.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
             setGrants(grantsList);
+            setUsedApps(appsArr);
             setUsedDays(totalUsed);
 
             // Sync with `employee.paidLeave` just in case (optional, depending on how UI needs it)
@@ -118,6 +129,23 @@ export const TabDetailLeave: React.FC<Props> = ({ employee }) => {
             fetchLeaveData();
         } catch (error: any) {
             await showAlert(`削除に失敗しました: ${error.message}`);
+        }
+    };
+
+    const handleUndoApproveLeaveStr = async (appId: string, dateStr: string) => {
+        if (!(await showConfirm(`対象日: ${dateStr}\nこの有休申請の「承認（完了）」を【取消】にしますか？\n（消費日数が差し戻され、残日数が増えます）`))) {
+            return;
+        }
+
+        try {
+            await updateDoc(doc(db, COLLECTIONS.APPLICATIONS, appId), {
+                status: 'canceled', // キャンセル扱いとして差し戻す
+                updatedAt: serverTimestamp()
+            });
+            await showAlert('承認を取り消しました。');
+            fetchLeaveData(); // refresh
+        } catch (error: any) {
+            await showAlert(`取消に失敗しました: ${error.message}`);
         }
     };
 
@@ -264,6 +292,61 @@ export const TabDetailLeave: React.FC<Props> = ({ employee }) => {
                                         </tr>
                                     );
                                 })}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+            </div>
+
+            <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 mt-6">
+                <h3 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
+                    <span>🗓️</span> 有給消化履歴
+                </h3>
+
+                {isLoading ? (
+                    <div className="py-8 text-center text-gray-400">読み込み中...</div>
+                ) : usedApps.length === 0 ? (
+                    <div className="py-8 text-center text-gray-400 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+                        有給の利用履歴はありません。
+                    </div>
+                ) : (
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="bg-gray-50/50 text-gray-400 text-xs font-bold uppercase tracking-wider">
+                                    <th className="px-4 py-3">取得日</th>
+                                    <th className="px-4 py-3">種類</th>
+                                    <th className="px-4 py-3">消化日数</th>
+                                    <th className="px-4 py-3">申請理由</th>
+                                    <th className="px-4 py-3 text-right">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-50">
+                                {usedApps.map(app => (
+                                    <tr key={app.id} className="hover:bg-gray-50/50 transition-colors">
+                                        <td className="px-4 py-4 text-sm font-bold text-gray-800">
+                                            {app.date}
+                                        </td>
+                                        <td className="px-4 py-4 text-sm text-gray-600">
+                                            <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-lg font-bold text-xs">{app.type}</span>
+                                        </td>
+                                        <td className="px-4 py-4 font-bold text-gray-500">
+                                            -{app.usedDays} 日
+                                        </td>
+                                        <td className="px-4 py-4 text-xs text-gray-500 max-w-[200px] truncate">
+                                            {app.reason}
+                                        </td>
+                                        <td className="px-4 py-4 text-right">
+                                            <button
+                                                onClick={() => handleUndoApproveLeaveStr(app.id, app.date)}
+                                                className="px-3 py-1.5 text-xs font-bold text-gray-500 bg-gray-100 hover:bg-red-50 hover:text-red-500 border border-gray-200 rounded-lg transition-colors"
+                                                title="承認を取り消し、有給日数を戻す"
+                                            >
+                                                承認取消
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
                             </tbody>
                         </table>
                     </div>
