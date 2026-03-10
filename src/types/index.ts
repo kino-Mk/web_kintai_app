@@ -32,6 +32,7 @@ export interface AttendanceRecord {
     timestamp: any; // Firestore Timestamp
     remark?: string;
     createdAt?: any;
+    isCorrected?: boolean;
 }
 
 export interface Application {

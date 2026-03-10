@@ -1,5 +1,5 @@
 import React, { ReactNode } from 'react';
-import { LogOut, User, Calendar, ClipboardList, AlertCircle, Settings } from 'lucide-react';
+import { LogOut, User, Calendar, ClipboardList, AlertCircle, Settings, Users, LayoutDashboard } from 'lucide-react';
 
 interface LayoutProps {
     children: ReactNode;
@@ -10,8 +10,10 @@ interface LayoutProps {
 
 export const Layout: React.FC<LayoutProps> = ({ children, activeScreen, onNavigate, isAdmin = false }) => {
     const navItems = isAdmin ? [
+        { id: 'admin-dashboard', label: 'ダッシュボード', icon: LayoutDashboard },
         { id: 'admin-employees', label: '従業員', icon: User },
         { id: 'admin-attendance', label: '勤怠/申請', icon: ClipboardList },
+        { id: 'admin-rate-overview', label: '出勤率', icon: Users },
         { id: 'admin-calendar', label: 'カレンダー', icon: Calendar },
         { id: 'admin-error-logs', label: 'エラーログ', icon: AlertCircle },
         { id: 'admin-settings', label: '設定', icon: Settings },
@@ -40,8 +42,8 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeScreen, onNaviga
                                 key={item.id}
                                 onClick={() => onNavigate(item.id)}
                                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${isActive
-                                        ? 'bg-primary text-white shadow-md'
-                                        : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
+                                    ? 'bg-primary text-white shadow-md'
+                                    : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
                                     }`}
                             >
                                 <Icon size={18} />

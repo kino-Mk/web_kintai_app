@@ -11,6 +11,7 @@ import { AdminErrorLogs } from './components/AdminErrorLogs'
 import { AdminSettings } from './components/AdminSettings'
 import { AdminCalendar } from './components/AdminCalendar'
 import { AdminDashboard } from './components/AdminDashboard'
+import { AdminRateOverview } from './components/AdminRateOverview'
 import { PasswordModal } from './components/PasswordModal'
 import { ResetPasswordScreen } from './components/ResetPasswordScreen'
 import { Settings } from 'lucide-react';
@@ -168,6 +169,10 @@ function App() {
 
                     {activeScreen === 'admin-attendance' && (
                         <AdminAttendance />
+                    )}
+
+                    {activeScreen === 'admin-rate-overview' && (
+                        <AdminRateOverview />
                     )}
 
                     {activeScreen === 'admin-error-logs' && (
