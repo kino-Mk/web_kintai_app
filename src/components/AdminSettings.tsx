@@ -2,14 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { db } from '../firebase';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { COLLECTIONS } from '../types';
-import { Save, Mail, Globe, Lock, ShieldCheck } from 'lucide-react';
+import { Save, Mail, Globe } from 'lucide-react';
 import { useModal } from '../contexts/ModalContext';
 
 export const AdminSettings: React.FC = () => {
     const [settings, setSettings] = useState({
         adminEmail: '',
-        gasWebAppUrl: '',
-        adminPassword: ''
+        gasWebAppUrl: ''
     });
     const [loading, setLoading] = useState(true);
     const { showAlert } = useModal();
@@ -85,25 +84,6 @@ export const AdminSettings: React.FC = () => {
                                 className="w-full p-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary text-sm font-mono"
                             />
                             <p className="text-[10px] text-gray-400">通知送信に使用する Google Apps Script のエンドポイントです。</p>
-                        </div>
-                    </div>
-
-                    <div className="pt-6 border-t border-gray-100">
-                        <div className="space-y-3 max-w-sm">
-                            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                                <Lock size={14} className="text-primary" /> 管理画面パスワード
-                            </label>
-                            <div className="relative">
-                                <input
-                                    type="password"
-                                    value={settings.adminPassword}
-                                    onChange={(e) => setSettings({ ...settings, adminPassword: e.target.value })}
-                                    placeholder="••••••••"
-                                    className="w-full p-4 rounded-2xl bg-gray-100/50 border-none focus:ring-2 focus:ring-primary text-sm font-bold"
-                                />
-                                <ShieldCheck className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300" size={20} />
-                            </div>
-                            <p className="text-[10px] text-gray-400">共有端末で管理画面を制限する場合に設定します（現在はURL引数で制御中）。</p>
                         </div>
                     </div>
                 </div>

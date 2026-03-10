@@ -3,7 +3,7 @@ import { db } from '../firebase';
 import { collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp } from 'firebase/firestore';
 import { Employee, COLLECTIONS, AttendanceRecord, AttendanceType } from '../types';
 import { toDate, formatTimeStr, getStartOfToday } from '../utils';
-import { Clock, Play, Square, MessageSquare, ArrowLeft } from 'lucide-react';
+import { Clock, Play, Square, MessageSquare, ArrowLeft, LogOut } from 'lucide-react';
 import { useModal } from '../contexts/ModalContext';
 
 interface Props {
@@ -50,11 +50,16 @@ export const AttendanceScreen: React.FC<Props> = ({ employee, onBack, onComplete
     }, [employee.id]);
 
     const handleStamp = async (type: AttendanceType) => {
+        if (isMobile) {
+            await showAlert('スマートフォンからの打刻は許可されていません。（申請のみ可能）');
+            return;
+        }
+
         const typeLabel = type === 'in' ? '出勤' : '退勤';
 
         // 二重打刻チェック（簡易）
         if (records.length > 0 && records[0].type === type) {
-            if (!(await showConfirm(`既に${typeLabel}打刻がありますが、上書き（追加）しますか？`))) {
+            if (!(await showConfirm(`既に${typeLabel} 打刻がありますが、上書き（追加）しますか？`))) {
                 return;
             }
         }
@@ -65,17 +70,16 @@ export const AttendanceScreen: React.FC<Props> = ({ employee, onBack, onComplete
                 empId: employee.id,
                 empName: employee.name,
                 type,
-                remark: remark.trim(),
                 timestamp: serverTimestamp(),
                 createdAt: serverTimestamp()
             });
 
             setRemark('');
-            await showAlert(`${typeLabel}を記録しました。お疲れ様です！`);
+            await showAlert(`${typeLabel} を打刻しました。`); // Updated alert message
             if (onComplete) onComplete();
         } catch (error: any) {
             console.error("Stamp error:", error);
-            await showAlert(`エラーが発生しました: ${error.message}`);
+            await showAlert(`エラーが発生しました: ${error.message} `);
         } finally {
             setIsSubmitting(false);
         }
@@ -89,7 +93,16 @@ export const AttendanceScreen: React.FC<Props> = ({ employee, onBack, onComplete
             </button>
 
             <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 text-center">
-                <h2 className="text-xl font-bold text-gray-800 mb-6">{employee.name} さん</h2>
+                <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-xl font-bold text-gray-800">{employee.name} さん</h2>
+                    <button
+                        onClick={onBack}
+                        className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+                        title="ログアウト"
+                    >
+                        <LogOut size={20} />
+                    </button>
+                </div>
 
                 <div className="mb-8">
                     <div className="text-5xl font-mono font-bold text-primary mb-2 flex items-center justify-center gap-4">
@@ -100,14 +113,17 @@ export const AttendanceScreen: React.FC<Props> = ({ employee, onBack, onComplete
                 </div>
 
                 {isMobile ? (
-                    <div className="mb-8 bg-gray-50 p-6 rounded-2xl border border-gray-100">
-                        <p className="text-gray-600 font-bold mb-4">
-                            スマートフォンからは打刻できません。<br />
-                            勤怠や休暇の登録は申請メニューから行ってください。
+                    <div className="mb-8 bg-orange-50 p-6 rounded-2xl border border-orange-100 text-left">
+                        <p className="text-orange-600 font-bold mb-4 flex items-start gap-3">
+                            <span className="text-xl">📱</span>
+                            <span>
+                                スマートフォンからは打刻できません。<br />
+                                勤怠や休暇の登録は申請メニューから行ってください。
+                            </span>
                         </p>
                         <button
                             onClick={onGoApplication}
-                            className="w-full bg-primary text-white p-4 rounded-xl font-bold shadow-lg shadow-primary/30 active:scale-95 transition-all"
+                            className="w-full bg-primary text-white p-4 rounded-xl font-bold shadow-lg shadow-primary/30 active:scale-95 transition-all text-center block"
                         >
                             各種申請メニューへ
                         </button>
@@ -155,8 +171,7 @@ export const AttendanceScreen: React.FC<Props> = ({ employee, onBack, onComplete
                         {records.map((rec) => (
                             <div key={rec.id} className="flex items-center justify-between p-4 rounded-xl bg-gray-50">
                                 <div className="flex items-center gap-4">
-                                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${rec.type === 'in' ? 'bg-success-bg text-success' : 'bg-primary-light text-primary'
-                                        }`}>
+                                    <span className={`px - 3 py - 1 rounded - full text - xs font - bold ${rec.type === 'in' ? 'bg-success-bg text-success' : 'bg-primary-light text-primary'} `}>
                                         {rec.type === 'in' ? '出勤' : '退勤'}
                                     </span>
                                     <span className="font-mono font-bold text-gray-700">{formatTimeStr(toDate(rec.timestamp))}</span>

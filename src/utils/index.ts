@@ -114,15 +114,41 @@ export function getMonthCycleRange(monthStr: string) {
 
 /**
  * Calculate remaining paid leave
+ * 有給休暇の失効ロジック: 付与日 (grantDate) から2年経過で失効とする
  */
-export function calculateRemainingPaidLeave(grants: any[], usedDays: number) {
-    const totalGranted = grants.reduce((sum, g) => sum + (g.days || 0), 0);
-    const remaining = totalGranted - usedDays;
+export function calculateRemainingPaidLeave(grants: any[], usedDays: number, baseDays: number = 0) {
+    const now = new Date();
+    let totalGranted = 0;
+    let totalExpired = 0;
+
+    // 付与履歴ごとに2年失効しているか判定
+    grants.forEach(g => {
+        const grantDays = g.days || 0;
+        totalGranted += grantDays;
+
+        if (g.grantDate) {
+            const grantDate = toDate(g.grantDate);
+            // 付与日から2年後の日付
+            const expireDate = new Date(grantDate.getFullYear() + 2, grantDate.getMonth(), grantDate.getDate());
+            if (now >= expireDate) {
+                totalExpired += grantDays;
+            }
+        }
+    });
+
+    // 失効分が使用済み分を上回る場合は使用済み分から相殺されるわけではなく、
+    // 残日数は「本来の総付与(基本＋付与) - 消化済み - 失効」ベースで計算
+    // ※厳密には有効期限が切れる前に消化したかなどを管理すべきだが、レガシー相当の簡易計算とする
+    const totalEntitlement = baseDays + totalGranted;
+    let remaining = totalEntitlement - usedDays - totalExpired;
 
     return {
         summary: {
+            base: baseDays,
             granted: totalGranted,
+            total: totalEntitlement,
             used: usedDays,
+            expired: totalExpired,
             remaining: Math.max(0, remaining)
         }
     };

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { db } from '../firebase';
 import { collection, query, orderBy, onSnapshot, addDoc, updateDoc, doc, serverTimestamp } from 'firebase/firestore';
 import { Employee, COLLECTIONS } from '../types';
-import { UserPlus, Search, Edit2, EyeOff, User } from 'lucide-react';
+import { Search, Edit2, EyeOff, User, Info, UserPlus } from 'lucide-react';
 import { useModal } from '../contexts/ModalContext';
 
 export const AdminEmployeeList: React.FC = () => {
@@ -58,13 +58,13 @@ export const AdminEmployeeList: React.FC = () => {
             setIsAdding(false);
             await showAlert('従業員を登録しました。');
         } catch (error: any) {
-            await showAlert(`エラーが発生しました: ${error.message}`);
+            await showAlert(`エラーが発生しました: ${error.message} `);
         }
     };
 
     const handleToggleHidden = async (emp: Employee) => {
         const action = emp.isHidden ? '表示' : '非表示 (削除扱い)';
-        if (!(await showConfirm(`${emp.name} さんを${action}にしますか？`))) return;
+        if (!(await showConfirm(`${emp.name} さんを${action} にしますか？`))) return;
 
         try {
             await updateDoc(doc(db, COLLECTIONS.EMPLOYEES, emp.docId || emp.id), {
@@ -72,7 +72,7 @@ export const AdminEmployeeList: React.FC = () => {
                 updatedAt: serverTimestamp()
             });
         } catch (error: any) {
-            await showAlert(`更新に失敗しました: ${error.message}`);
+            await showAlert(`更新に失敗しました: ${error.message} `);
         }
     };
 
@@ -108,7 +108,7 @@ export const AdminEmployeeList: React.FC = () => {
             await showAlert('従業員情報を更新しました。');
             setSelectedEmployee(null);
         } catch (error: any) {
-            await showAlert(`更新に失敗しました: ${error.message}`);
+            await showAlert(`更新に失敗しました: ${error.message} `);
         }
     };
 
@@ -124,7 +124,7 @@ export const AdminEmployeeList: React.FC = () => {
             await showAlert('削除しました。');
             setSelectedEmployee(null);
         } catch (error: any) {
-            await showAlert(`削除に失敗しました: ${error.message}`);
+            await showAlert(`削除に失敗しました: ${error.message} `);
         }
     };
 
@@ -196,7 +196,7 @@ export const AdminEmployeeList: React.FC = () => {
                         </thead>
                         <tbody className="divide-y divide-gray-50">
                             {filteredEmployees.map((emp) => (
-                                <tr key={emp.id} className={`hover:bg-gray-50/50 transition-colors ${emp.isHidden ? 'opacity-50' : ''}`}>
+                                <tr key={emp.id} className={`hover: bg - gray - 50 / 50 transition - colors ${emp.isHidden ? 'opacity-50' : ''} `}>
                                     <td className="px-6 py-4 font-mono text-sm">{emp.id}</td>
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-3">
@@ -207,8 +207,8 @@ export const AdminEmployeeList: React.FC = () => {
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${emp.isHidden ? 'bg-gray-100 text-gray-500' : 'bg-success-bg text-success'
-                                            }`}>
+                                        <span className={`px - 2 py - 1 rounded - full text - [10px] font - bold ${emp.isHidden ? 'bg-gray-100 text-gray-500' : 'bg-success-bg text-success'
+                                            } `}>
                                             {emp.isHidden ? '非表示' : '在職'}
                                         </span>
                                     </td>
@@ -222,7 +222,7 @@ export const AdminEmployeeList: React.FC = () => {
                                             </button>
                                             <button
                                                 onClick={() => handleToggleHidden(emp)}
-                                                className={`p-2 transition-colors ${emp.isHidden ? 'text-primary hover:text-primary-dark' : 'text-gray-400 hover:text-danger'}`}
+                                                className={`p - 2 transition - colors ${emp.isHidden ? 'text-primary hover:text-primary-dark' : 'text-gray-400 hover:text-danger'} `}
                                                 title={emp.isHidden ? '表示にする' : '非表示にする'}
                                             >
                                                 <EyeOff size={18} />
@@ -283,7 +283,15 @@ export const AdminEmployeeList: React.FC = () => {
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-sm font-bold text-gray-600">有給休暇残日数</label>
+                                        <div className="flex items-center gap-1">
+                                            <label className="text-sm font-bold text-gray-600">基本有給日数（初期値/調整用）</label>
+                                            <div className="group relative">
+                                                <Info size={14} className="text-gray-300" />
+                                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-gray-800 text-white text-[10px] rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20">
+                                                    初期付与日数や、過去の繰り越し分を手動調整する場合に入力します。
+                                                </div>
+                                            </div>
+                                        </div>
                                         <input
                                             type="number"
                                             step="0.5"

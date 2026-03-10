@@ -10,7 +10,6 @@ import { AdminAttendance } from './components/AdminAttendance'
 import { AdminErrorLogs } from './components/AdminErrorLogs'
 import { AdminSettings } from './components/AdminSettings'
 import { AdminCalendar } from './components/AdminCalendar'
-import { AdminLock } from './components/AdminLock'
 import { AdminDashboard } from './components/AdminDashboard'
 import { PasswordModal } from './components/PasswordModal'
 import { ResetPasswordScreen } from './components/ResetPasswordScreen'
@@ -23,7 +22,6 @@ import { getStartOfToday } from './utils'
 function App() {
     const [activeScreen, setActiveScreen] = useState('selection');
     const [isAdmin, setIsAdmin] = useState(false);
-    const [isAdminUnlocked, setIsAdminUnlocked] = useState(false);
     const [currentEmployee, setCurrentEmployee] = useState<Employee | null>(null);
     const [pendingEmployee, setPendingEmployee] = useState<Employee | null>(null);
     const [attendanceStates, setAttendanceStates] = useState<Record<string, 'in' | 'out'>>({});
@@ -199,9 +197,6 @@ function App() {
                     )}
                 </div>
             </Layout>
-            {isAdmin && !isAdminUnlocked && activeScreen.startsWith('admin-') && (
-                <AdminLock onUnlock={() => setIsAdminUnlocked(true)} />
-            )}
 
             {pendingEmployee && (
                 <PasswordModal

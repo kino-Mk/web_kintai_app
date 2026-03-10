@@ -46,7 +46,7 @@ export const ApplicationScreen: React.FC<Props> = ({ employee, onBack, onComplet
                 else if (data.type?.startsWith('半休')) usedDays += 0.5;
             });
 
-            const result = calculateRemainingPaidLeave(grants, usedDays);
+            const result = calculateRemainingPaidLeave(grants, usedDays, employee.paidLeave || 0);
             setRemainingLeave(result.summary.remaining);
         } catch (error) {
             console.error('Fetch leave error:', error);

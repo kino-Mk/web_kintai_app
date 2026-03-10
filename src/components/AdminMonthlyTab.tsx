@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { db } from '../firebase';
 import { collection, query, where, orderBy, onSnapshot, getDocs } from 'firebase/firestore';
-import { AttendanceRecord, Employee, COLLECTIONS } from '../types';
+import { AttendanceRecord, Employee, COLLECTIONS, Application } from '../types';
 import { toDate, getMonthCycleRange, calculateRemainingPaidLeave, formatDateStr, formatCsvTime, downloadCSV } from '../utils';
-import { User, Download, ChevronRight } from 'lucide-react';
+import { User, ChevronRight, Download } from 'lucide-react';
 import { useModal } from '../contexts/ModalContext';
 
 export const AdminMonthlyTab: React.FC = () => {
@@ -12,6 +12,7 @@ export const AdminMonthlyTab: React.FC = () => {
     const [records, setRecords] = useState<AttendanceRecord[]>([]);
     const [leaveGrants, setLeaveGrants] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [allApprovedApps, setAllApprovedApps] = useState<Application[]>([]);
     const { showAlert } = useModal();
 
     useEffect(() => {
@@ -24,6 +25,11 @@ export const AdminMonthlyTab: React.FC = () => {
             const qGrants = query(collection(db, COLLECTIONS.LEAVE_GRANTS));
             const snapGrants = await getDocs(qGrants);
             setLeaveGrants(snapGrants.docs.map(doc => doc.data()));
+
+            // 全期間の承認済み有給申請を取得（残日数計算用）
+            const qApps = query(collection(db, COLLECTIONS.APPLICATIONS), where('status', '==', 'approved'));
+            const snapApps = await getDocs(qApps);
+            setAllApprovedApps(snapApps.docs.map(doc => doc.data()) as Application[]);
         };
         fetchData();
     }, []);
@@ -49,12 +55,22 @@ export const AdminMonthlyTab: React.FC = () => {
         const empRecs = records.filter(r => r.empId === empId);
         const workDays = new Set(empRecs.map(r => formatDateStr(toDate(r.timestamp)))).size;
 
-        // 有給計算 (簡易版)
+        // 有給付与
         const empGrants = leaveGrants.filter(g => g.empId === empId);
-        const paidLeaveApps = records.filter(r => r.empId === empId && r.remark?.includes('有給')); // 実際は判定が必要
-        const paidLeaveCount = paidLeaveApps.length; // 仮
 
-        const leaveInfo = calculateRemainingPaidLeave(empGrants, paidLeaveCount);
+        // 当該従業員の全期間の有給消化数計算
+        const empApps = allApprovedApps.filter(a => a.empId === empId);
+        let usedDays = 0;
+        empApps.forEach(a => {
+            if (a.type === '有給') usedDays += 1;
+            else if (a.type?.startsWith('半休')) usedDays += 0.5;
+        });
+
+        // 従業員マスタの基本日数
+        const emp = employees.find(e => e.id === empId);
+        const baseDays = emp?.paidLeave || 0;
+
+        const leaveInfo = calculateRemainingPaidLeave(empGrants, usedDays, baseDays);
 
         return {
             workDays,
@@ -70,7 +86,7 @@ export const AdminMonthlyTab: React.FC = () => {
 
         try {
             if (records.length === 0) {
-                await showAlert(`${selectedMonth}月次の打刻データはありません。`);
+                await showAlert(`${selectedMonth} 月次の打刻データはありません。`);
                 return;
             }
 
@@ -107,10 +123,10 @@ export const AdminMonthlyTab: React.FC = () => {
                 for (const dateKey of sortedDates) {
                     const day = emp.days[dateKey];
                     if (day.in) {
-                        csvContent += `${empId},${emp.name},1,${day.in}\n`;
+                        csvContent += `${empId},${emp.name}, 1, ${day.in} \n`;
                     }
                     if (day.out) {
-                        csvContent += `${empId},${emp.name},2,${day.out}\n`;
+                        csvContent += `${empId},${emp.name}, 2, ${day.out} \n`;
                     }
                 }
             }
