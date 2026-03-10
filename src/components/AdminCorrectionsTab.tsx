@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { db } from '../firebase';
-import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
 import { StampCorrection, COLLECTIONS, ApplicationStatus } from '../types';
 import { toDate, formatFullDateTime } from '../utils';
 import { Check, X, Clock, Filter, AlertTriangle } from 'lucide-react';
@@ -31,14 +31,29 @@ export const AdminCorrectionsTab: React.FC = () => {
 
     const handleStatusChange = async (corr: StampCorrection, newStatus: ApplicationStatus) => {
         const action = newStatus === 'approved' ? '承認' : '却下';
-        if (!(await showConfirm(`${corr.empName} さんの修正依頼を${action}しますか？`))) return;
+
+        let confirmMsg = `${corr.empName} さんの修正依頼を${action}しますか？`;
+        if (newStatus === 'approved') {
+            confirmMsg += '\n承認すると該当の打刻データが自動的に削除されます。';
+        }
+
+        if (!(await showConfirm(confirmMsg))) return;
 
         try {
+            if (newStatus === 'approved' && corr.attendanceDocId) {
+                await deleteDoc(doc(db, COLLECTIONS.ATTENDANCE, corr.attendanceDocId));
+            }
+
             await updateDoc(doc(db, COLLECTIONS.STAMP_CORRECTIONS, corr.id!), {
                 status: newStatus,
                 updatedAt: serverTimestamp()
             });
-            await showAlert(`修正依頼を${action}しました。`);
+
+            if (newStatus === 'approved') {
+                await showAlert('承認しました。該当の打刻データを削除しました。');
+            } else {
+                await showAlert(`修正依頼を${action}しました。`);
+            }
         } catch (error: any) {
             await showAlert(`更新に失敗しました: ${error.message}`);
         }

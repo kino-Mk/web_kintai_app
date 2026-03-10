@@ -2,8 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { db } from '../firebase';
 import { collection, query, where, orderBy, onSnapshot, getDocs } from 'firebase/firestore';
 import { AttendanceRecord, Employee, COLLECTIONS } from '../types';
-import { toDate, getMonthCycleRange, calculateRemainingPaidLeave, formatDateStr } from '../utils';
+import { toDate, getMonthCycleRange, calculateRemainingPaidLeave, formatDateStr, formatCsvTime, downloadCSV } from '../utils';
 import { User, Download, ChevronRight } from 'lucide-react';
+import { useModal } from '../contexts/ModalContext';
 
 export const AdminMonthlyTab: React.FC = () => {
     const [selectedMonth, setSelectedMonth] = useState(formatDateStr(new Date()).substring(0, 7)); // YYYY-MM
@@ -11,6 +12,7 @@ export const AdminMonthlyTab: React.FC = () => {
     const [records, setRecords] = useState<AttendanceRecord[]>([]);
     const [leaveGrants, setLeaveGrants] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const { showAlert } = useModal();
 
     useEffect(() => {
         // 従業員と有給付与情報を取得
@@ -60,6 +62,66 @@ export const AdminMonthlyTab: React.FC = () => {
         };
     };
 
+    const handleExportCSV = async () => {
+        if (!selectedMonth) {
+            await showAlert('対象月を選択してください。');
+            return;
+        }
+
+        try {
+            if (records.length === 0) {
+                await showAlert(`${selectedMonth}月次の打刻データはありません。`);
+                return;
+            }
+
+            // records is already filtered by the selected month cycle
+            // 構造: Map<EmpID, Map<DateString, {in: String, out: String}>>
+            const exportData: Record<string, { name: string, days: Record<string, { in?: string, out?: string }> }> = {};
+
+            records.forEach(data => {
+                const dateObj = toDate(data.timestamp);
+                const dateKey = formatDateStr(dateObj);
+                const formattedTime = formatCsvTime(dateObj);
+
+                if (!exportData[data.empId]) {
+                    exportData[data.empId] = { name: data.empName, days: {} };
+                }
+                if (!exportData[data.empId].days[dateKey]) {
+                    exportData[data.empId].days[dateKey] = {};
+                }
+
+                if (data.type === 'in') {
+                    if (!exportData[data.empId].days[dateKey].in) {
+                        exportData[data.empId].days[dateKey].in = formattedTime;
+                    }
+                } else if (data.type === 'out') {
+                    exportData[data.empId].days[dateKey].out = formattedTime;
+                }
+            });
+
+            let csvContent = "従業員ID,従業員名,打刻種別,打刻日時\n";
+
+            for (const empId in exportData) {
+                const emp = exportData[empId];
+                const sortedDates = Object.keys(emp.days).sort();
+                for (const dateKey of sortedDates) {
+                    const day = emp.days[dateKey];
+                    if (day.in) {
+                        csvContent += `${empId},${emp.name},1,${day.in}\n`;
+                    }
+                    if (day.out) {
+                        csvContent += `${empId},${emp.name},2,${day.out}\n`;
+                    }
+                }
+            }
+
+            downloadCSV(csvContent, `attendance_monthly_${selectedMonth}.csv`);
+        } catch (error: any) {
+            console.error('Export error:', error);
+            await showAlert("エクスポートに失敗しました: " + error.message);
+        }
+    };
+
     return (
         <div className="space-y-4">
             <div className="flex flex-col md:flex-row justify-between gap-4 bg-gray-50/50 p-4 rounded-2xl border border-gray-100">
@@ -72,7 +134,10 @@ export const AdminMonthlyTab: React.FC = () => {
                         className="px-4 py-2 rounded-xl border-none bg-white shadow-sm focus:ring-2 focus:ring-primary text-sm font-bold"
                     />
                 </div>
-                <button className="flex items-center gap-2 bg-white border border-gray-200 text-gray-600 px-6 py-2 rounded-xl text-sm font-bold hover:bg-gray-50 transition-all shadow-sm active:scale-95">
+                <button
+                    onClick={handleExportCSV}
+                    className="flex items-center gap-2 bg-white border border-gray-200 text-gray-600 px-6 py-2 rounded-xl text-sm font-bold hover:bg-gray-50 transition-all shadow-sm active:scale-95"
+                >
                     <Download size={18} />
                     CSVエクスポート
                 </button>

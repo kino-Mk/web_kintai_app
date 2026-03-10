@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { db } from '../firebase';
-import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, serverTimestamp, addDoc } from 'firebase/firestore';
 import { Application, COLLECTIONS, ApplicationStatus } from '../types';
 import { toDate, formatFullDateTime } from '../utils';
 import { Check, X, Clock, User, Filter } from 'lucide-react';
@@ -31,9 +31,45 @@ export const AdminApplicationsTab: React.FC = () => {
 
     const handleStatusChange = async (app: Application, newStatus: ApplicationStatus) => {
         const action = newStatus === 'approved' ? '承認' : '却下';
-        if (!(await showConfirm(`${app.empName} さんの申請を${action}しますか？`))) return;
+        let confirmed;
+        if (newStatus === 'approved' && ['遅刻', '早退', '残業'].includes(app.type)) {
+            confirmed = await showConfirm(`${app.empName} さんの申請を承認し「処理済み」にしますか？\n（承認録として打刻データが自動生成されます）`);
+        } else {
+            confirmed = await showConfirm(`${app.empName} さんの申請を${action}しますか？`);
+        }
+
+        if (!confirmed) return;
 
         try {
+            // 打刻データの自動生成 (遅刻・早退・残業のみ、かつ承認時)
+            if (newStatus === 'approved') {
+                let attType: 'in' | 'out' | null = null;
+                let targetTimeStr: string | undefined;
+
+                if (app.type === '遅刻') {
+                    attType = 'in';
+                    targetTimeStr = app.startTime;
+                } else if (app.type === '早退' || app.type === '残業') {
+                    attType = 'out';
+                    targetTimeStr = app.endTime;
+                }
+
+                if (attType && targetTimeStr) {
+                    const [years, months, days] = app.date.split('-').map(Number);
+                    const [hours, minutes] = targetTimeStr.split(':').map(Number);
+                    const targetDate = new Date(years, months - 1, days, hours, minutes);
+
+                    await addDoc(collection(db, COLLECTIONS.ATTENDANCE), {
+                        empId: app.empId,
+                        empName: app.empName,
+                        type: attType,
+                        timestamp: targetDate, // Firebase SDK automatically converts Date to Timestamp
+                        remark: `${app.type}承認による自動登録`,
+                        createdAt: serverTimestamp()
+                    });
+                }
+            }
+
             await updateDoc(doc(db, COLLECTIONS.APPLICATIONS, app.id!), {
                 status: newStatus,
                 updatedAt: serverTimestamp()

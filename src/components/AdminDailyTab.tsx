@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { db } from '../firebase';
-import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot, doc, deleteDoc, getDocs } from 'firebase/firestore';
 import { AttendanceRecord, Employee, COLLECTIONS } from '../types';
-import { toDate, formatTimeStr, formatDateStr } from '../utils';
-import { Calendar as CalendarIcon, User, Search } from 'lucide-react';
+import { toDate, formatTimeStr, formatDateStr, formatCsvTime, downloadCSV } from '../utils';
+import { Calendar as CalendarIcon, User, Search, Trash2, Download } from 'lucide-react';
+import { useModal } from '../contexts/ModalContext';
 
 export const AdminDailyTab: React.FC = () => {
     const [selectedDate, setSelectedDate] = useState(formatDateStr(new Date()));
@@ -11,6 +12,7 @@ export const AdminDailyTab: React.FC = () => {
     const [records, setRecords] = useState<AttendanceRecord[]>([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('');
+    const { showAlert, showConfirm } = useModal();
 
     useEffect(() => {
         // 従業員一覧を取得
@@ -52,6 +54,36 @@ export const AdminDailyTab: React.FC = () => {
         return records.filter(r => r.empId === empId);
     };
 
+    const handleDeleteRecord = async (recordId: string, empName: string, type: 'in' | 'out') => {
+        const typeStr = type === 'in' ? '出勤' : '退勤';
+        if (!(await showConfirm(`${empName} さんの ${typeStr} 打刻データを削除しますか？\n（この操作は元に戻せません）`))) return;
+        try {
+            await deleteDoc(doc(db, COLLECTIONS.ATTENDANCE, recordId));
+            await showAlert('打刻データを削除しました。');
+        } catch (error: any) {
+            await showAlert(`削除に失敗しました: ${error.message}`);
+        }
+    };
+
+    const handleExportRawCSV = async () => {
+        try {
+            const snapshot = await getDocs(query(collection(db, COLLECTIONS.ATTENDANCE), orderBy('timestamp', 'desc')));
+            let csvContent = "従業員ID, 従業員氏名, 打刻日時\n";
+
+            snapshot.forEach(doc => {
+                const data = doc.data() as AttendanceRecord;
+                const date = toDate(data.timestamp);
+                const formattedTime = formatCsvTime(date);
+                csvContent += `${data.empId}, ${data.empName}, ${formattedTime}\n`;
+            });
+
+            downloadCSV(csvContent, 'attendance_raw.csv');
+        } catch (error: any) {
+            console.error('Export error:', error);
+            await showAlert("エクスポートに失敗しました: " + error.message);
+        }
+    };
+
     return (
         <div className="space-y-4">
             <div className="flex flex-col md:flex-row justify-between gap-4 bg-gray-50/50 p-4 rounded-2xl border border-gray-100">
@@ -76,7 +108,14 @@ export const AdminDailyTab: React.FC = () => {
                         <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300" />
                     </div>
                 </div>
-                <div className="text-right">
+                <div className="text-right flex flex-col md:flex-row items-end md:items-center gap-4">
+                    <button
+                        onClick={handleExportRawCSV}
+                        className="flex items-center gap-2 bg-white border border-gray-200 text-gray-600 px-4 py-2 rounded-xl text-sm font-bold hover:bg-gray-50 transition-all shadow-sm active:scale-95"
+                    >
+                        <Download size={16} />
+                        全データCSV
+                    </button>
                     <span className="text-xs text-gray-400 font-bold">打刻件数: {records.length} 件</span>
                 </div>
             </div>
@@ -119,16 +158,38 @@ export const AdminDailyTab: React.FC = () => {
                                                 <div className="flex gap-4">
                                                     <div className="space-y-1">
                                                         <span className="text-[10px] font-bold text-gray-400 block uppercase">IN</span>
-                                                        <span className={`font-mono font-bold text-sm ${inStamp ? 'text-gray-700' : 'text-gray-200'}`}>
-                                                            {inStamp ? formatTimeStr(toDate(inStamp.timestamp)) : '--:--'}
-                                                        </span>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className={`font-mono font-bold text-sm ${inStamp ? 'text-gray-700' : 'text-gray-200'}`}>
+                                                                {inStamp ? formatTimeStr(toDate(inStamp.timestamp)) : '--:--'}
+                                                            </span>
+                                                            {inStamp && (
+                                                                <button
+                                                                    onClick={() => handleDeleteRecord(inStamp.id!, emp.name, 'in')}
+                                                                    className="text-gray-300 hover:text-danger hover:bg-danger-bg p-1 rounded transition-colors"
+                                                                    title="この打刻を削除"
+                                                                >
+                                                                    <Trash2 size={12} />
+                                                                </button>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                     <div className="w-px h-8 bg-gray-100"></div>
                                                     <div className="space-y-1">
                                                         <span className="text-[10px] font-bold text-gray-400 block uppercase">OUT</span>
-                                                        <span className={`font-mono font-bold text-sm ${outStamp ? 'text-gray-700' : 'text-gray-200'}`}>
-                                                            {outStamp ? formatTimeStr(toDate(outStamp.timestamp)) : '--:--'}
-                                                        </span>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className={`font-mono font-bold text-sm ${outStamp ? 'text-gray-700' : 'text-gray-200'}`}>
+                                                                {outStamp ? formatTimeStr(toDate(outStamp.timestamp)) : '--:--'}
+                                                            </span>
+                                                            {outStamp && (
+                                                                <button
+                                                                    onClick={() => handleDeleteRecord(outStamp.id!, emp.name, 'out')}
+                                                                    className="text-gray-300 hover:text-danger hover:bg-danger-bg p-1 rounded transition-colors"
+                                                                    title="この打刻を削除"
+                                                                >
+                                                                    <Trash2 size={12} />
+                                                                </button>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </td>
