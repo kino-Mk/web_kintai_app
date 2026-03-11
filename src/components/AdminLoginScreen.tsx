@@ -3,7 +3,7 @@ import { db } from '../firebase';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { COLLECTIONS } from '../types';
 import { Lock, Shield } from 'lucide-react';
-import { hashPassword } from '../utils';
+import { hashPassword, verifyPassword } from '../utils';
 import { useModal } from '../contexts/ModalContext';
 
 interface Props {
@@ -15,6 +15,12 @@ export const AdminLoginScreen: React.FC<Props> = ({ onSuccess }) => {
     const [errorMsg, setErrorMsg] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
+    // パスワード試行回数制限
+    const MAX_ATTEMPTS = 5;
+    const LOCKOUT_SECONDS = 30;
+    const [failCount, setFailCount] = useState(0);
+    const [lockedUntil, setLockedUntil] = useState<number | null>(null);
+
     // 初期設定用
     const [isSetup, setIsSetup] = useState(false);
     const [newPassword, setNewPassword] = useState('');
@@ -24,29 +30,59 @@ export const AdminLoginScreen: React.FC<Props> = ({ onSuccess }) => {
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setErrorMsg('');
+
+        // ロックアウト中かチェック
+        if (lockedUntil && Date.now() < lockedUntil) {
+            const remainSec = Math.ceil((lockedUntil - Date.now()) / 1000);
+            setErrorMsg(`パスワード入力がロックされています。${remainSec}秒後にお試しください。`);
+            return;
+        }
+        if (lockedUntil && Date.now() >= lockedUntil) {
+            setLockedUntil(null);
+            setFailCount(0);
+        }
+
         setIsLoading(true);
 
         try {
             const settingsDoc = await getDoc(doc(db, COLLECTIONS.SETTINGS, 'system'));
 
             if (!settingsDoc.exists() || !settingsDoc.data().adminPasswordHash) {
-                // 管理者パスワード未設定 → 初期設定画面を表示
                 setIsSetup(true);
                 setIsLoading(false);
                 return;
             }
 
             const storedHash = settingsDoc.data().adminPasswordHash;
-            const inputHash = await hashPassword(password);
+            const isValid = await verifyPassword(password, storedHash);
 
-            if (inputHash === storedHash) {
+            if (isValid) {
+                // 旧形式ハッシュの場合、ソルト付きに再ハッシュして更新
+                if (!storedHash.includes(':')) {
+                    try {
+                        const newHash = await hashPassword(password);
+                        await setDoc(doc(db, COLLECTIONS.SETTINGS, 'system'), {
+                            adminPasswordHash: newHash,
+                            updatedAt: serverTimestamp()
+                        }, { merge: true });
+                    } catch (e) { /* マイグレーション失敗でもログインは成功 */ }
+                }
+                setFailCount(0);
                 onSuccess();
             } else {
-                setErrorMsg('管理者パスワードが正しくありません');
+                const newCount = failCount + 1;
+                setFailCount(newCount);
+                if (newCount >= MAX_ATTEMPTS) {
+                    setLockedUntil(Date.now() + LOCKOUT_SECONDS * 1000);
+                    setErrorMsg(`パスワードを${MAX_ATTEMPTS}回間違えました。${LOCKOUT_SECONDS}秒間ロックされます。`);
+                } else {
+                    setErrorMsg(`管理者パスワードが正しくありません（${newCount}/${MAX_ATTEMPTS}）`);
+                }
                 setPassword('');
             }
         } catch (error: any) {
-            setErrorMsg(`認証エラー: ${error.message}`);
+            console.error('Admin login error:', error);
+            setErrorMsg('認証処理中にエラーが発生しました');
         } finally {
             setIsLoading(false);
         }
@@ -82,7 +118,8 @@ export const AdminLoginScreen: React.FC<Props> = ({ onSuccess }) => {
             await showAlert('管理者パスワードを設定しました。');
             onSuccess();
         } catch (error: any) {
-            setErrorMsg(`設定エラー: ${error.message}`);
+            console.error('Admin setup error:', error);
+            setErrorMsg('設定に失敗しました。しばらくしてからお試しください。');
         } finally {
             setIsLoading(false);
         }

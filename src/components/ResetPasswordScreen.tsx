@@ -67,7 +67,8 @@ export const ResetPasswordScreen: React.FC<Props> = ({ token, onHome }) => {
                 setTokenDocId(tokenDoc.id);
                 setIsValid(true);
             } catch (error: any) {
-                setErrorMsg(`エラーが発生しました: ${error.message}`);
+                console.error('Token validation error:', error);
+                setErrorMsg('エラーが発生しました。しばらくしてからお試しください。');
             } finally {
                 setIsLoading(false);
             }
@@ -106,7 +107,8 @@ export const ResetPasswordScreen: React.FC<Props> = ({ token, onHome }) => {
 
             setIsSuccess(true);
         } catch (error: any) {
-            setFormError(`パスワードの更新に失敗しました: ${error.message}`);
+            console.error('Password reset error:', error);
+            setFormError('パスワードの更新に失敗しました。しばらくしてからお試しください。');
             setIsSubmitting(false);
         }
     };

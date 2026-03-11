@@ -4,7 +4,7 @@ import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { COLLECTIONS } from '../types';
 import { Save, Mail, Globe, Lock } from 'lucide-react';
 import { useModal } from '../contexts/ModalContext';
-import { hashPassword } from '../utils';
+import { hashPassword, verifyPassword } from '../utils';
 
 export const AdminSettings: React.FC = () => {
     const [settings, setSettings] = useState({
@@ -47,7 +47,8 @@ export const AdminSettings: React.FC = () => {
             }, { merge: true });
             await showAlert('設定を保存しました。');
         } catch (error: any) {
-            await showAlert(`保存失敗: ${error.message}`);
+            console.error('Settings save error:', error);
+            await showAlert('保存に失敗しました。しばらくしてからお試しください。');
         } finally {
             setLoading(false);
         }
@@ -70,15 +71,15 @@ export const AdminSettings: React.FC = () => {
             // 現在のパスワードを検証
             const settingsDoc = await getDoc(doc(db, COLLECTIONS.SETTINGS, 'system'));
             if (settingsDoc.exists() && settingsDoc.data().adminPasswordHash) {
-                const currentHash = await hashPassword(currentPw);
-                if (currentHash !== settingsDoc.data().adminPasswordHash) {
+                const isValid = await verifyPassword(currentPw, settingsDoc.data().adminPasswordHash);
+                if (!isValid) {
                     await showAlert('現在のパスワードが正しくありません。');
                     setPwLoading(false);
                     return;
                 }
             }
 
-            // 新しいパスワードをハッシュ化して保存
+            // 新しいパスワードをソルト付きハッシュ化して保存
             const newHash = await hashPassword(newPw);
             await setDoc(doc(db, COLLECTIONS.SETTINGS, 'system'), {
                 adminPasswordHash: newHash,
@@ -90,7 +91,8 @@ export const AdminSettings: React.FC = () => {
             setConfirmPw('');
             await showAlert('管理者パスワードを変更しました。');
         } catch (error: any) {
-            await showAlert(`パスワード変更に失敗しました: ${error.message}`);
+            console.error('Password change error:', error);
+            await showAlert('パスワード変更に失敗しました。しばらくしてからお試しください。');
         } finally {
             setPwLoading(false);
         }

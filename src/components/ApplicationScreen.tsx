@@ -130,7 +130,8 @@ export const ApplicationScreen: React.FC<Props> = ({ employee, onBack, onComplet
             if (onComplete) onComplete();
             else onBack();
         } catch (error: any) {
-            await showAlert(`申請に失敗しました: ${error.message}`);
+            console.error('Application submit error:', error);
+            await showAlert('申請に失敗しました。しばらくしてからお試しください。');
         } finally {
             setLoading(false);
         }

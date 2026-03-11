@@ -40,7 +40,8 @@ export const StampCorrectionModal: React.FC<Props> = ({ isOpen, onClose }) => {
             })) as any[];
             setStamps(list);
         } catch (error: any) {
-            showAlert(`打刻データの取得に失敗しました: ${error.message}`);
+            console.error('Stamp load error:', error);
+            showAlert('打刻データの取得に失敗しました。しばらくしてからお試しください。');
         } finally {
             setLoading(false);
         }
@@ -99,7 +100,8 @@ export const StampCorrectionModal: React.FC<Props> = ({ isOpen, onClose }) => {
             onClose();
             setReason('');
         } catch (error: any) {
-            await showAlert(`申請に失敗しました: ${error.message}`);
+            console.error('Stamp correction error:', error);
+            await showAlert('申請に失敗しました。しばらくしてからお試しください。');
         } finally {
             setLoading(false);
         }

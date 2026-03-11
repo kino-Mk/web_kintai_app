@@ -3,6 +3,7 @@ import { db } from '../../firebase';
 import { doc, updateDoc, serverTimestamp, collection, query, where, getDocs } from 'firebase/firestore';
 import { Employee, COLLECTIONS } from '../../types';
 import { useModal } from '../../contexts/ModalContext';
+import { hashPassword } from '../../utils';
 import { format, subMonths } from 'date-fns';
 
 interface Props {
@@ -13,7 +14,7 @@ export const TabDetailBasic: React.FC<Props> = ({ employee }) => {
     const [editForm, setEditForm] = useState({
         name: employee.name || '',
         email: employee.email || '',
-        password: employee.password || '',
+        newPassword: '', // 新規設定用（平文は読み込まない）
         isHidden: !!employee.isHidden
     });
     const [isSaving, setIsSaving] = useState(false);
@@ -32,7 +33,7 @@ export const TabDetailBasic: React.FC<Props> = ({ employee }) => {
         setEditForm({
             name: employee.name || '',
             email: employee.email || '',
-            password: employee.password || '',
+            newPassword: '',
             isHidden: !!employee.isHidden
         });
 
@@ -157,16 +158,25 @@ export const TabDetailBasic: React.FC<Props> = ({ employee }) => {
 
         try {
             setIsSaving(true);
-            await updateDoc(doc(db, COLLECTIONS.EMPLOYEES, employee.docId || employee.id), {
+            const updateData: any = {
                 name: editForm.name.trim(),
                 email: editForm.email.trim(),
-                password: editForm.password.trim(),
                 isHidden: editForm.isHidden,
                 updatedAt: serverTimestamp()
-            });
+            };
+
+            // パスワードが入力されている場合のみハッシュ化して更新
+            if (editForm.newPassword.trim()) {
+                updateData.passwordHash = await hashPassword(editForm.newPassword.trim());
+                updateData.password = ''; // 平文パスワードをクリア
+            }
+
+            await updateDoc(doc(db, COLLECTIONS.EMPLOYEES, employee.docId || employee.id), updateData);
+            setEditForm(prev => ({ ...prev, newPassword: '' }));
             await showAlert('従業員情報を更新しました。');
         } catch (error: any) {
-            await showAlert(`更新に失敗しました: ${error.message}`);
+            console.error('Employee update error:', error);
+            await showAlert('更新に失敗しました。しばらくしてからお試しください。');
         } finally {
             setIsSaving(false);
         }
@@ -181,7 +191,8 @@ export const TabDetailBasic: React.FC<Props> = ({ employee }) => {
             await showAlert('削除しました。');
             // employee is deleted, will cause unmount or redirect via parent snapshot
         } catch (error: any) {
-            await showAlert(`削除に失敗しました: ${error.message}`);
+            console.error('Employee delete error:', error);
+            await showAlert('削除に失敗しました。しばらくしてからお試しください。');
         }
     };
 
@@ -274,14 +285,15 @@ export const TabDetailBasic: React.FC<Props> = ({ employee }) => {
                         />
                     </div>
                     <div>
-                        <label className="text-xs font-bold text-gray-500 mb-1 block">打刻制限用パスワード</label>
+                        <label className="text-xs font-bold text-gray-500 mb-1 block">パスワードを再設定</label>
                         <input
                             type="password"
-                            value={editForm.password}
-                            onChange={(e) => setEditForm({ ...editForm, password: e.target.value })}
-                            placeholder="スマホ打刻制限用"
+                            value={editForm.newPassword}
+                            onChange={(e) => setEditForm({ ...editForm, newPassword: e.target.value })}
+                            placeholder="変更する場合のみ入力"
                             className="w-full p-3 rounded-xl bg-gray-50 border-none focus:ring-2 focus:ring-primary"
                         />
+                        <p className="text-xs text-gray-400 mt-1">空欄の場合は変更しません</p>
                     </div>
                     <div>
                         <label className="text-xs font-bold text-gray-500 mb-1 block">有休残日数 (表示のみ)</label>

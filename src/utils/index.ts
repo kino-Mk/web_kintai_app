@@ -4,15 +4,50 @@ import { format } from 'date-fns';
 import { COLLECTIONS } from '../types';
 
 /**
- * パスワードを SHA-256 でハッシュ化する
- * Web Crypto API を使用し、16進文字列で返す
+ * ランダムなソルトを生成する（16バイトの16進文字列）
  */
-export async function hashPassword(password: string): Promise<string> {
+export function generateSalt(): string {
+    const array = new Uint8Array(16);
+    crypto.getRandomValues(array);
+    return Array.from(array).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+/**
+ * SHA-256 でハッシュ化する（内部用）
+ */
+async function sha256(input: string): Promise<string> {
     const encoder = new TextEncoder();
-    const data = encoder.encode(password);
+    const data = encoder.encode(input);
     const hashBuffer = await crypto.subtle.digest('SHA-256', data);
     const hashArray = Array.from(new Uint8Array(hashBuffer));
     return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+/**
+ * パスワードをソルト付き SHA-256 でハッシュ化する
+ * 戻り値: "salt:hash" 形式の文字列
+ */
+export async function hashPassword(password: string): Promise<string> {
+    const salt = generateSalt();
+    const hash = await sha256(salt + password);
+    return `${salt}:${hash}`;
+}
+
+/**
+ * パスワードを検証する
+ * ソルト付き ("salt:hash") と旧形式（ソルトなし）の両方に対応
+ */
+export async function verifyPassword(password: string, storedHash: string): Promise<boolean> {
+    if (storedHash.includes(':')) {
+        // ソルト付き形式 "salt:hash"
+        const [salt, hash] = storedHash.split(':');
+        const inputHash = await sha256(salt + password);
+        return inputHash === hash;
+    } else {
+        // 旧形式（ソルトなし）— 後方互換性
+        const inputHash = await sha256(password);
+        return inputHash === storedHash;
+    }
 }
 
 /**

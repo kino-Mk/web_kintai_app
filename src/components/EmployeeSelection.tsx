@@ -22,10 +22,15 @@ export const EmployeeSelection: React.FC<Props> = ({ onSelect, attendanceStates 
     useEffect(() => {
         const q = query(collection(db, COLLECTIONS.EMPLOYEES), orderBy('name', 'asc'));
         const unsubscribe = onSnapshot(q, (snapshot) => {
-            const list = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            })) as Employee[];
+            const list = snapshot.docs.map(doc => {
+                const data = doc.data();
+                // パスワード関連フィールドをクライアント側で除去
+                const { password, passwordHash, ...safeData } = data;
+                return {
+                    id: doc.id,
+                    ...safeData
+                };
+            }) as Employee[];
 
             setEmployees(list.filter(e => !e.isHidden));
             setLoading(false);

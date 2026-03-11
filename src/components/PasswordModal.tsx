@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Employee, COLLECTIONS } from '../types';
 import { db } from '../firebase';
-import { doc, getDoc, collection, addDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, addDoc, serverTimestamp, updateDoc, query, where, getDocs, deleteDoc } from 'firebase/firestore';
 import { X, Lock, Mail, ArrowLeft } from 'lucide-react';
-import { hashPassword } from '../utils';
+import { hashPassword, verifyPassword } from '../utils';
 
 interface Props {
     employee: Employee;
@@ -63,11 +63,19 @@ export const PasswordModal: React.FC<Props> = ({ employee, onSuccess, onClose })
         }
 
         try {
-            const inputHash = await hashPassword(password);
-
             if (employee.passwordHash) {
-                // ハッシュ化済みのパスワードと比較
-                if (inputHash === employee.passwordHash) {
+                // ハッシュ化済みのパスワードと比較（ソルト付き・旧形式両対応）
+                const isValid = await verifyPassword(password, employee.passwordHash);
+                if (isValid) {
+                    // 旧形式ハッシュの場合、ソルト付きに再ハッシュして更新
+                    if (!employee.passwordHash.includes(':')) {
+                        try {
+                            const newHash = await hashPassword(password);
+                            await updateDoc(doc(db, COLLECTIONS.EMPLOYEES, employee.docId || employee.id), {
+                                passwordHash: newHash
+                            });
+                        } catch (e) { /* マイグレーション失敗でもログインは成功 */ }
+                    }
                     setFailCount(0);
                     onSuccess();
                 } else {
@@ -84,10 +92,11 @@ export const PasswordModal: React.FC<Props> = ({ employee, onSuccess, onClose })
             } else if (employee.password) {
                 // 旧平文パスワードとの比較（自動マイグレーション）
                 if (password === employee.password) {
-                    // ログイン成功 → ハッシュ化して Firestore を更新
+                    // ログイン成功 → ソルト付きハッシュ化して Firestore を更新
                     try {
+                        const newHash = await hashPassword(password);
                         await updateDoc(doc(db, COLLECTIONS.EMPLOYEES, employee.docId || employee.id), {
-                            passwordHash: inputHash,
+                            passwordHash: newHash,
                             password: '' // 平文パスワードをクリア
                         });
                     } catch (migrationError) {
@@ -141,6 +150,13 @@ export const PasswordModal: React.FC<Props> = ({ employee, onSuccess, onClose })
                 return;
             }
 
+            // 既存のリセットトークンを削除（多重発行防止）
+            const existingTokens = await getDocs(
+                query(collection(db, 'passwordResetTokens'), where('empId', '==', employee.id))
+            );
+            const deletePromises = existingTokens.docs.map(d => deleteDoc(d.ref));
+            await Promise.all(deletePromises);
+
             // 暗号学的に安全なトークンを生成
             const token = generateSecureToken(64);
 
@@ -154,12 +170,14 @@ export const PasswordModal: React.FC<Props> = ({ employee, onSuccess, onClose })
                 createdAt: serverTimestamp()
             });
 
-            // GAS WebApp URLをFirestoreのsettingsから取得（未設定時はフォールバック）
-            const FALLBACK_GAS_URL = 'https://script.google.com/macros/s/AKfycbzz2AyAjBQFQhL2sofqH0woLy-KA9tH201r0cIDHd2RGgwMgEZjQym3yXSxIWwhjf4c/exec';
+            // GAS WebApp URLをFirestoreのsettingsから取得
             const settingsDoc = await getDoc(doc(db, COLLECTIONS.SETTINGS, 'system'));
-            const gasUrl = (settingsDoc.exists() && settingsDoc.data().gasWebAppUrl)
-                ? settingsDoc.data().gasWebAppUrl
-                : FALLBACK_GAS_URL;
+            const gasUrl = settingsDoc.exists() && settingsDoc.data().gasWebAppUrl;
+            if (!gasUrl) {
+                setResetMsg({ text: 'メール送信の設定がされていません。管理者に連絡してください。', type: 'error' });
+                setIsSubmitting(false);
+                return;
+            }
 
             const response = await fetch(gasUrl, {
                 method: 'POST',
@@ -182,7 +200,8 @@ export const PasswordModal: React.FC<Props> = ({ employee, onSuccess, onClose })
                 setResetMsg({ text: result.message || 'メール送信に失敗しました。', type: 'error' });
             }
         } catch (error: any) {
-            setResetMsg({ text: `エラーが発生しました: ${error.message}`, type: 'error' });
+            console.error('Reset request error:', error);
+            setResetMsg({ text: 'リセットリンクの送信に失敗しました。しばらくしてからお試しください。', type: 'error' });
         } finally {
             setIsSubmitting(false);
         }

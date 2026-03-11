@@ -97,7 +97,7 @@ export const AttendanceScreen: React.FC<Props> = ({ employee, onBack, onComplete
             if (onComplete) onComplete();
         } catch (error: any) {
             console.error("Stamp error:", error);
-            await showAlert(`エラーが発生しました: ${error.message}`);
+            await showAlert('打刻に失敗しました。しばらくしてからお試しください。');
         } finally {
             setIsSubmitting(false);
         }
