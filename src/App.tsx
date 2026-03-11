@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 
 import { Layout } from './components/Layout'
 import { initConsoleIntercept, reportError } from './utils'
@@ -18,8 +18,7 @@ import { ResetPasswordScreen } from './components/ResetPasswordScreen'
 import { Settings } from 'lucide-react';
 import { Employee, COLLECTIONS, AttendanceRecord } from './types'
 import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore'
-import { db, auth } from './firebase'
-import { onAuthStateChanged, signOut } from 'firebase/auth'
+import { db } from './firebase'
 import { getStartOfToday } from './utils'
 
 function App() {
@@ -30,37 +29,6 @@ function App() {
     const [pendingEmployee, setPendingEmployee] = useState<Employee | null>(null);
     const [attendanceStates, setAttendanceStates] = useState<Record<string, 'in' | 'out'>>({});
     const [resetToken, setResetToken] = useState<string | null>(null);
-
-    // 管理者セッションタイムアウト（30分）
-    const SESSION_TIMEOUT_MS = 30 * 60 * 1000;
-    const sessionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-    const handleAdminLogout = useCallback(() => {
-        signOut(auth);
-        setIsAdminAuthenticated(false);
-        setActiveScreen('admin-dashboard');
-    }, []);
-
-    // Firebase Auth の認証状態を監視
-    useEffect(() => {
-        if (!isAdmin) return;
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
-            if (user) {
-                setIsAdminAuthenticated(true);
-                // セッションタイムアウトをセット
-                if (sessionTimerRef.current) clearTimeout(sessionTimerRef.current);
-                sessionTimerRef.current = setTimeout(() => {
-                    handleAdminLogout();
-                }, SESSION_TIMEOUT_MS);
-            } else {
-                setIsAdminAuthenticated(false);
-            }
-        });
-        return () => {
-            unsubscribe();
-            if (sessionTimerRef.current) clearTimeout(sessionTimerRef.current);
-        };
-    }, [isAdmin, handleAdminLogout]);
 
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
