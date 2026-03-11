@@ -23,21 +23,21 @@ service cloud.firestore {
       allow create: if request.resource.data.empId is string
                     && request.resource.data.empId.size() > 0;
       allow update: if true;
-      allow delete: if false;
+      allow delete: if true;
     }
 
     // --- 申請 ---
     // 読み取り: 全許可
     // 作成: empId と type が必須
     // 更新: ステータスの変更のみ許可
-    // 削除: 不許可
+    // 削除: 許可 (管理画面から削除可能にするため)
     match /applications/{docId} {
       allow read: if true;
       allow create: if request.resource.data.empId is string
                     && request.resource.data.empId.size() > 0
                     && request.resource.data.type is string;
       allow update: if isValidStatus(request.resource.data.status);
-      allow delete: if false;
+      allow delete: if true;
     }
 
     // --- 打刻修正申請 ---
@@ -47,7 +47,7 @@ service cloud.firestore {
                     && request.resource.data.empId.size() > 0
                     && request.resource.data.reason is string;
       allow update: if isValidStatus(request.resource.data.status);
-      allow delete: if false;
+      allow delete: if true;
     }
 
     // --- パスワードリセットトークン ---
@@ -66,7 +66,7 @@ service cloud.firestore {
     match /leaveGrants/{docId} {
       allow read: if true;
       allow create, update: if true;
-      allow delete: if false;
+      allow delete: if true;
     }
 
     // --- 祝日 ---
