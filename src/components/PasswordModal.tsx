@@ -35,9 +35,27 @@ export const PasswordModal: React.FC<Props> = ({ employee, onSuccess, onClose })
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [resetMsg, setResetMsg] = useState({ text: '', type: '' });
 
+    // パスワード試行回数制限
+    const MAX_ATTEMPTS = 5;
+    const LOCKOUT_SECONDS = 30;
+    const [failCount, setFailCount] = useState(0);
+    const [lockedUntil, setLockedUntil] = useState<number | null>(null);
+
     const handlePasswordSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setErrorMsg('');
+
+        // ロックアウト中かチェック
+        if (lockedUntil && Date.now() < lockedUntil) {
+            const remainSec = Math.ceil((lockedUntil - Date.now()) / 1000);
+            setErrorMsg(`パスワード入力がロックされています。${remainSec}秒後にお試しください。`);
+            return;
+        }
+        // ロックアウト解除
+        if (lockedUntil && Date.now() >= lockedUntil) {
+            setLockedUntil(null);
+            setFailCount(0);
+        }
 
         if (!employee.password && !employee.passwordHash) {
             setErrorMsg('パスワードが設定されていません。管理者に設定を依頼してください。');
@@ -50,9 +68,17 @@ export const PasswordModal: React.FC<Props> = ({ employee, onSuccess, onClose })
             if (employee.passwordHash) {
                 // ハッシュ化済みのパスワードと比較
                 if (inputHash === employee.passwordHash) {
+                    setFailCount(0);
                     onSuccess();
                 } else {
-                    setErrorMsg('パスワードが正しくありません');
+                    const newCount = failCount + 1;
+                    setFailCount(newCount);
+                    if (newCount >= MAX_ATTEMPTS) {
+                        setLockedUntil(Date.now() + LOCKOUT_SECONDS * 1000);
+                        setErrorMsg(`パスワードを${MAX_ATTEMPTS}回間違えました。${LOCKOUT_SECONDS}秒間ロックされます。`);
+                    } else {
+                        setErrorMsg(`パスワードが正しくありません（${newCount}/${MAX_ATTEMPTS}）`);
+                    }
                     setPassword('');
                 }
             } else if (employee.password) {
@@ -68,9 +94,17 @@ export const PasswordModal: React.FC<Props> = ({ employee, onSuccess, onClose })
                         // マイグレーション失敗でもログインは成功させる
                         console.error('Password migration failed:', migrationError);
                     }
+                    setFailCount(0);
                     onSuccess();
                 } else {
-                    setErrorMsg('パスワードが正しくありません');
+                    const newCount = failCount + 1;
+                    setFailCount(newCount);
+                    if (newCount >= MAX_ATTEMPTS) {
+                        setLockedUntil(Date.now() + LOCKOUT_SECONDS * 1000);
+                        setErrorMsg(`パスワードを${MAX_ATTEMPTS}回間違えました。${LOCKOUT_SECONDS}秒間ロックされます。`);
+                    } else {
+                        setErrorMsg(`パスワードが正しくありません（${newCount}/${MAX_ATTEMPTS}）`);
+                    }
                     setPassword('');
                 }
             }

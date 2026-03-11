@@ -46,18 +46,15 @@ export function initConsoleIntercept() {
 }
 
 /**
- * Report error to Firestore
+ * Report error to Firestore（最小限の情報のみ保存）
  */
 export async function reportError(error: any, context: string) {
     try {
         const errorData = {
             message: error instanceof Error ? error.message : String(error),
-            stack: error instanceof Error ? error.stack : null,
             context,
             timestamp: serverTimestamp(),
-            userAgent: navigator.userAgent,
-            url: window.location.href,
-            consoleLogs: (window as any)._consoleHistory || [],
+            url: window.location.pathname,
             resolved: false
         };
 

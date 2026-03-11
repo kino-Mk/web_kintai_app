@@ -4,7 +4,6 @@ import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { COLLECTIONS } from '../types';
 import { Save, Mail, Globe, Lock } from 'lucide-react';
 import { useModal } from '../contexts/ModalContext';
-import { hashPassword } from '../utils';
 
 export const AdminSettings: React.FC = () => {
     const [settings, setSettings] = useState({
@@ -56,8 +55,8 @@ export const AdminSettings: React.FC = () => {
     const handlePasswordChange = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!newPw || newPw.length < 4) {
-            await showAlert('新しいパスワードは4文字以上で設定してください。');
+        if (!newPw || newPw.length < 6) {
+            await showAlert('新しいパスワードは6文字以上で設定してください。');
             return;
         }
         if (newPw !== confirmPw) {
@@ -67,30 +66,35 @@ export const AdminSettings: React.FC = () => {
 
         setPwLoading(true);
         try {
-            // 現在のパスワードを検証
-            const settingsDoc = await getDoc(doc(db, COLLECTIONS.SETTINGS, 'system'));
-            if (settingsDoc.exists() && settingsDoc.data().adminPasswordHash) {
-                const currentHash = await hashPassword(currentPw);
-                if (currentHash !== settingsDoc.data().adminPasswordHash) {
-                    await showAlert('現在のパスワードが正しくありません。');
-                    setPwLoading(false);
-                    return;
-                }
+            const { getAuth, reauthenticateWithCredential, EmailAuthProvider, updatePassword } = await import('firebase/auth');
+            const authInstance = getAuth();
+            const user = authInstance.currentUser;
+
+            if (!user || !user.email) {
+                await showAlert('認証情報が見つかりません。再ログインしてください。');
+                setPwLoading(false);
+                return;
             }
 
-            // 新しいパスワードをハッシュ化して保存
-            const newHash = await hashPassword(newPw);
-            await setDoc(doc(db, COLLECTIONS.SETTINGS, 'system'), {
-                adminPasswordHash: newHash,
-                updatedAt: serverTimestamp()
-            }, { merge: true });
+            // 現在のパスワードで再認証
+            const credential = EmailAuthProvider.credential(user.email, currentPw);
+            await reauthenticateWithCredential(user, credential);
+
+            // パスワード更新
+            await updatePassword(user, newPw);
 
             setCurrentPw('');
             setNewPw('');
             setConfirmPw('');
             await showAlert('管理者パスワードを変更しました。');
         } catch (error: any) {
-            await showAlert(`パスワード変更に失敗しました: ${error.message}`);
+            if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+                await showAlert('現在のパスワードが正しくありません。');
+            } else if (error.code === 'auth/weak-password') {
+                await showAlert('新しいパスワードが弱すぎます。6文字以上で設定してください。');
+            } else {
+                await showAlert(`パスワード変更に失敗しました: ${error.message}`);
+            }
         } finally {
             setPwLoading(false);
         }

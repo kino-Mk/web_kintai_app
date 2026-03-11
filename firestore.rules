@@ -7,12 +7,17 @@ service cloud.firestore {
       return status in ['pending', 'approved', 'rejected', 'completed', 'canceled'];
     }
 
+    // ヘルパー: Firebase Auth で認証済みか判定
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
     // --- 従業員コレクション ---
     // 読み取り: 全許可（従業員選択画面で使用）
-    // 書き込み: 全許可（管理画面での従業員追加・編集に使用）
-    // ※将来的に Firebase Auth が導入された場合、管理者ロールでの制限を推奨
+    // 書き込み: 認証済みユーザーのみ（管理者限定）
     match /employees/{docId} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if isAuthenticated();
     }
 
     // --- 勤怠記録 ---
@@ -23,21 +28,21 @@ service cloud.firestore {
       allow create: if request.resource.data.empId is string
                     && request.resource.data.empId.size() > 0;
       allow update: if true;
-      allow delete: if true;
+      allow delete: if isAuthenticated();
     }
 
     // --- 申請 ---
     // 読み取り: 全許可
     // 作成: empId と type が必須
     // 更新: ステータスの変更のみ許可
-    // 削除: 許可 (管理画面から削除可能にするため)
+    // 削除: 認証済みユーザーのみ（管理者限定）
     match /applications/{docId} {
       allow read: if true;
       allow create: if request.resource.data.empId is string
                     && request.resource.data.empId.size() > 0
                     && request.resource.data.type is string;
       allow update: if isValidStatus(request.resource.data.status);
-      allow delete: if true;
+      allow delete: if isAuthenticated();
     }
 
     // --- 打刻修正申請 ---
@@ -47,7 +52,7 @@ service cloud.firestore {
                     && request.resource.data.empId.size() > 0
                     && request.resource.data.reason is string;
       allow update: if isValidStatus(request.resource.data.status);
-      allow delete: if true;
+      allow delete: if isAuthenticated();
     }
 
     // --- パスワードリセットトークン ---
@@ -65,32 +70,31 @@ service cloud.firestore {
     // --- 有給付与履歴 ---
     match /leaveGrants/{docId} {
       allow read: if true;
-      allow create, update: if true;
-      allow delete: if true;
+      allow create, update: if isAuthenticated();
+      allow delete: if isAuthenticated();
     }
 
     // --- 祝日 ---
     match /holidays/{docId} {
       allow read: if true;
-      allow create, update: if true;
-      allow delete: if true;
+      allow create, update: if isAuthenticated();
+      allow delete: if isAuthenticated();
     }
 
     // --- システム設定 ---
     // 読み取り: 全許可（GAS URLの取得に使用）
-    // 書き込み: 全許可（管理画面で設定変更に使用）
-    // ※将来的に管理者ロールで制限すべき
+    // 書き込み: 認証済みユーザーのみ（管理者限定）
     match /settings/{docId} {
       allow read: if true;
-      allow write: if true;
+      allow write: if isAuthenticated();
     }
 
     // --- エラーログ ---
     match /errorLogs/{docId} {
-      allow read: if true;
+      allow read: if isAuthenticated();
       allow create: if true;
-      allow update: if true;
-      allow delete: if true;
+      allow update: if isAuthenticated();
+      allow delete: if isAuthenticated();
     }
   }
 }
