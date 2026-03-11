@@ -22,9 +22,33 @@ export const ApplicationScreen: React.FC<Props> = ({ employee, onBack, onComplet
     const [loading, setLoading] = useState(false);
     const { showAlert, showConfirm } = useModal();
 
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
     useEffect(() => {
         fetchPaidLeave(employee.id);
     }, [employee.id]);
+
+    if (!isMobile) {
+        return (
+            <div className="bg-white p-12 rounded-3xl shadow-sm border border-gray-100 text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <span className="text-3xl">💻</span>
+                </div>
+                <h2 className="text-2xl font-bold text-gray-800 mb-4">PCからの申請はできません</h2>
+                <p className="text-gray-500 mb-8 leading-relaxed">
+                    勤怠申請や休暇の登録は、スマートフォンからアクセスした時のみ利用可能な機能です。<br />
+                    お手数ですが、スマートフォンから再度アクセスしてください。
+                </p>
+                <button
+                    onClick={onBack}
+                    className="bg-primary text-white px-8 py-3 rounded-xl font-bold shadow-md hover:bg-primary-dark transition-colors inline-flex items-center gap-2"
+                >
+                    <ChevronLeft size={20} />
+                    戻る
+                </button>
+            </div>
+        );
+    }
 
     const fetchPaidLeave = async (empId: string) => {
         try {

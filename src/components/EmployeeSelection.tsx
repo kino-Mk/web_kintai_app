@@ -17,6 +17,8 @@ export const EmployeeSelection: React.FC<Props> = ({ onSelect, attendanceStates 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [activeTab, setActiveTab] = useState<'all' | 'in'>('all');
 
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
     useEffect(() => {
         const q = query(collection(db, COLLECTIONS.EMPLOYEES), orderBy('name', 'asc'));
         const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -101,13 +103,22 @@ export const EmployeeSelection: React.FC<Props> = ({ onSelect, attendanceStates 
             </div>
 
             <div className="pt-6 border-t border-gray-50">
-                <button
-                    onClick={() => setIsModalOpen(true)}
-                    className="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-2xl border-2 border-dashed border-warning text-warning font-bold hover:bg-warning-bg transition-all active:scale-95"
-                >
-                    <AlertCircle size={20} />
-                    打刻内容の修正を申請する
-                </button>
+                {isMobile ? (
+                    <button
+                        onClick={() => setIsModalOpen(true)}
+                        className="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-2xl border-2 border-dashed border-warning text-warning font-bold hover:bg-warning-bg transition-all active:scale-95"
+                    >
+                        <AlertCircle size={20} />
+                        打刻内容の修正を申請する
+                    </button>
+                ) : (
+                    <div className="text-center p-4 bg-gray-50 rounded-2xl border border-gray-200">
+                        <p className="text-sm text-gray-500 font-bold flex items-center justify-center gap-2">
+                            <AlertCircle size={16} className="text-gray-400" />
+                            打刻の修正申請はスマートフォンからのみ可能です
+                        </p>
+                    </div>
+                )}
             </div>
 
             <StampCorrectionModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />

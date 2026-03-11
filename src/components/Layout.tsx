@@ -9,6 +9,8 @@ interface LayoutProps {
 }
 
 export const Layout: React.FC<LayoutProps> = ({ children, activeScreen, onNavigate, isAdmin = false }) => {
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
     const navItems = isAdmin ? [
         { id: 'admin-dashboard', label: 'ダッシュボード', icon: LayoutDashboard },
         { id: 'admin-employees', label: '従業員', icon: User },
@@ -19,7 +21,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeScreen, onNaviga
         { id: 'admin-settings', label: '設定', icon: Settings },
     ] : [
         { id: 'selection', label: 'ホーム', icon: User },
-        { id: 'application', label: '申請申告', icon: ClipboardList },
+        ...(isMobile ? [{ id: 'application', label: '申請申告', icon: ClipboardList }] : []),
     ];
 
     return (
