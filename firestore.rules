@@ -2,18 +2,95 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper functions
+    // ヘルパー: 有効なステータス値か判定
     function isValidStatus(status) {
       return status in ['pending', 'approved', 'rejected', 'completed', 'canceled'];
     }
 
-    // すべてのドキュメントに対して、今は開発・運用を優先しつつ最低限のガードをかける
-    match /{document=**} {
+    // --- 従業員コレクション ---
+    // 読み取り: 全許可（従業員選択画面で使用）
+    // 書き込み: 全許可（管理画面での従業員追加・編集に使用）
+    // ※将来的に Firebase Auth が導入された場合、管理者ロールでの制限を推奨
+    match /employees/{docId} {
       allow read, write: if true;
     }
 
-    // 個別の詳細バリデーション（必要に応じて将来的に強化可能）
-    // 現状は permission error を回避するため全体を許可にしていますが、
-    // ここにサブマッチを書くことで特定の制限を追加できます。
+    // --- 勤怠記録 ---
+    // 読み取り: 全許可（リアルタイム表示に使用）
+    // 書き込み: empId が空でないことを検証
+    match /attendance/{docId} {
+      allow read: if true;
+      allow create: if request.resource.data.empId is string
+                    && request.resource.data.empId.size() > 0;
+      allow update: if true;
+      allow delete: if false;
+    }
+
+    // --- 申請 ---
+    // 読み取り: 全許可
+    // 作成: empId と type が必須
+    // 更新: ステータスの変更のみ許可
+    // 削除: 不許可
+    match /applications/{docId} {
+      allow read: if true;
+      allow create: if request.resource.data.empId is string
+                    && request.resource.data.empId.size() > 0
+                    && request.resource.data.type is string;
+      allow update: if isValidStatus(request.resource.data.status);
+      allow delete: if false;
+    }
+
+    // --- 打刻修正申請 ---
+    match /stampCorrections/{docId} {
+      allow read: if true;
+      allow create: if request.resource.data.empId is string
+                    && request.resource.data.empId.size() > 0
+                    && request.resource.data.reason is string;
+      allow update: if isValidStatus(request.resource.data.status);
+      allow delete: if false;
+    }
+
+    // --- パスワードリセットトークン ---
+    // 作成: トークンと empId が必須
+    // 読み取り: トークン検証に使用
+    // 削除: 使用済みトークンの削除に使用
+    match /passwordResetTokens/{docId} {
+      allow read: if true;
+      allow create: if request.resource.data.token is string
+                    && request.resource.data.empId is string;
+      allow update: if false;
+      allow delete: if true;
+    }
+
+    // --- 有給付与履歴 ---
+    match /leaveGrants/{docId} {
+      allow read: if true;
+      allow create, update: if true;
+      allow delete: if false;
+    }
+
+    // --- 祝日 ---
+    match /holidays/{docId} {
+      allow read: if true;
+      allow create, update: if true;
+      allow delete: if true;
+    }
+
+    // --- システム設定 ---
+    // 読み取り: 全許可（GAS URLの取得に使用）
+    // 書き込み: 全許可（管理画面で設定変更に使用）
+    // ※将来的に管理者ロールで制限すべき
+    match /settings/{docId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // --- エラーログ ---
+    match /errorLogs/{docId} {
+      allow read: if true;
+      allow create: if true;
+      allow update: if true;
+      allow delete: if true;
+    }
   }
 }

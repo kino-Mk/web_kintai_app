@@ -4,12 +4,24 @@ import { db } from '../firebase';
 import { doc, getDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { X, Lock, Mail, ArrowLeft } from 'lucide-react';
 
-const GAS_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbzz2AyAjBQFQhL2sofqH0woLy-KA9tH201r0cIDHd2RGgwMgEZjQym3yXSxIWwhjf4c/exec';
-
 interface Props {
     employee: Employee;
     onSuccess: () => void;
     onClose: () => void;
+}
+
+/**
+ * 暗号学的に安全なランダムトークンを生成する
+ */
+function generateSecureToken(length: number): string {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    const randomValues = new Uint32Array(length);
+    crypto.getRandomValues(randomValues);
+    let token = '';
+    for (let i = 0; i < length; i++) {
+        token += chars.charAt(randomValues[i] % chars.length);
+    }
+    return token;
 }
 
 export const PasswordModal: React.FC<Props> = ({ employee, onSuccess, onClose }) => {
@@ -66,11 +78,8 @@ export const PasswordModal: React.FC<Props> = ({ employee, onSuccess, onClose })
                 return;
             }
 
-            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-            let token = '';
-            for (let i = 0; i < 64; i++) {
-                token += chars.charAt(Math.floor(Math.random() * chars.length));
-            }
+            // 暗号学的に安全なトークンを生成
+            const token = generateSecureToken(64);
 
             const expiresAt = new Date();
             expiresAt.setHours(expiresAt.getHours() + 1);
@@ -82,7 +91,17 @@ export const PasswordModal: React.FC<Props> = ({ employee, onSuccess, onClose })
                 createdAt: serverTimestamp()
             });
 
-            const response = await fetch(GAS_WEBAPP_URL, {
+            // GAS WebApp URLをFirestoreのsettingsから取得
+            const settingsDoc = await getDoc(doc(db, COLLECTIONS.SETTINGS, 'system'));
+            const gasUrl = settingsDoc.exists() ? settingsDoc.data().gasWebAppUrl : null;
+
+            if (!gasUrl) {
+                setResetMsg({ text: 'メール送信の設定がされていません。管理者に連絡してください。', type: 'error' });
+                setIsSubmitting(false);
+                return;
+            }
+
+            const response = await fetch(gasUrl, {
                 method: 'POST',
                 body: JSON.stringify({
                     empId: employee.id,

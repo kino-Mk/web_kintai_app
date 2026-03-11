@@ -83,6 +83,10 @@ export const ResetPasswordScreen: React.FC<Props> = ({ token, onHome }) => {
             setFormError('パスワードを入力してください。');
             return;
         }
+        if (newPassword.length < 4) {
+            setFormError('パスワードは4文字以上で設定してください。');
+            return;
+        }
         if (newPassword !== confirmPassword) {
             setFormError('パスワードが一致しません。');
             return;
