@@ -59,7 +59,7 @@ export const ApplicationScreen: React.FC<Props> = ({ employee, onBack, onComplet
             const qApp = query(
                 collection(db, COLLECTIONS.APPLICATIONS),
                 where('empId', '==', empId),
-                where('status', '==', 'approved')
+                where('status', 'in', ['approved', 'completed'])
             );
             const appSnap = await getDocs(qApp);
 
