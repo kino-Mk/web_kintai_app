@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { db } from '../firebase';
 import { collection, query, where, getDocs, deleteDoc, updateDoc, doc } from 'firebase/firestore';
 import { Lock, AlertTriangle, CheckCircle } from 'lucide-react';
+import { hashPassword } from '../utils';
 
 interface Props {
     token: string;
@@ -94,8 +95,11 @@ export const ResetPasswordScreen: React.FC<Props> = ({ token, onHome }) => {
 
         setIsSubmitting(true);
         try {
+            // パスワードをハッシュ化して保存
+            const hashedPassword = await hashPassword(newPassword);
             await updateDoc(doc(db, 'employees', empId), {
-                password: newPassword
+                passwordHash: hashedPassword,
+                password: '' // 旧平文パスワードをクリア
             });
 
             await deleteDoc(doc(db, 'passwordResetTokens', tokenDocId));

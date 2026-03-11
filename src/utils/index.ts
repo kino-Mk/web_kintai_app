@@ -4,6 +4,18 @@ import { format } from 'date-fns';
 import { COLLECTIONS } from '../types';
 
 /**
+ * パスワードを SHA-256 でハッシュ化する
+ * Web Crypto API を使用し、16進文字列で返す
+ */
+export async function hashPassword(password: string): Promise<string> {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(password);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+/**
  * Console interception for error reporting
  */
 export function initConsoleIntercept() {

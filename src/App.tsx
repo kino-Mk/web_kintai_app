@@ -12,6 +12,7 @@ import { AdminSettings } from './components/AdminSettings'
 import { AdminCalendar } from './components/AdminCalendar'
 import { AdminDashboard } from './components/AdminDashboard'
 import { AdminRateOverview } from './components/AdminRateOverview'
+import { AdminLoginScreen } from './components/AdminLoginScreen'
 import { PasswordModal } from './components/PasswordModal'
 import { ResetPasswordScreen } from './components/ResetPasswordScreen'
 import { Settings } from 'lucide-react';
@@ -23,6 +24,7 @@ import { getStartOfToday } from './utils'
 function App() {
     const [activeScreen, setActiveScreen] = useState('selection');
     const [isAdmin, setIsAdmin] = useState(false);
+    const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
     const [currentEmployee, setCurrentEmployee] = useState<Employee | null>(null);
     const [pendingEmployee, setPendingEmployee] = useState<Employee | null>(null);
     const [attendanceStates, setAttendanceStates] = useState<Record<string, 'in' | 'out'>>({});
@@ -110,6 +112,11 @@ function App() {
                 }}
             />
         );
+    }
+
+    // 管理者モードで未認証の場合はログイン画面を表示
+    if (isAdmin && !isAdminAuthenticated) {
+        return <AdminLoginScreen onSuccess={() => setIsAdminAuthenticated(true)} />;
     }
 
     return (

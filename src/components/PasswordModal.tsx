@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Employee, COLLECTIONS } from '../types';
 import { db } from '../firebase';
-import { doc, getDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, collection, addDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { X, Lock, Mail, ArrowLeft } from 'lucide-react';
+import { hashPassword } from '../utils';
 
 interface Props {
     employee: Employee;
@@ -34,20 +35,48 @@ export const PasswordModal: React.FC<Props> = ({ employee, onSuccess, onClose })
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [resetMsg, setResetMsg] = useState({ text: '', type: '' });
 
-    const handlePasswordSubmit = (e: React.FormEvent) => {
+    const handlePasswordSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setErrorMsg('');
 
-        if (!employee.password) {
+        if (!employee.password && !employee.passwordHash) {
             setErrorMsg('パスワードが設定されていません。管理者に設定を依頼してください。');
             return;
         }
 
-        if (password === employee.password) {
-            onSuccess();
-        } else {
-            setErrorMsg('パスワードが正しくありません');
-            setPassword('');
+        try {
+            const inputHash = await hashPassword(password);
+
+            if (employee.passwordHash) {
+                // ハッシュ化済みのパスワードと比較
+                if (inputHash === employee.passwordHash) {
+                    onSuccess();
+                } else {
+                    setErrorMsg('パスワードが正しくありません');
+                    setPassword('');
+                }
+            } else if (employee.password) {
+                // 旧平文パスワードとの比較（自動マイグレーション）
+                if (password === employee.password) {
+                    // ログイン成功 → ハッシュ化して Firestore を更新
+                    try {
+                        await updateDoc(doc(db, COLLECTIONS.EMPLOYEES, employee.docId || employee.id), {
+                            passwordHash: inputHash,
+                            password: '' // 平文パスワードをクリア
+                        });
+                    } catch (migrationError) {
+                        // マイグレーション失敗でもログインは成功させる
+                        console.error('Password migration failed:', migrationError);
+                    }
+                    onSuccess();
+                } else {
+                    setErrorMsg('パスワードが正しくありません');
+                    setPassword('');
+                }
+            }
+        } catch (error) {
+            setErrorMsg('認証処理中にエラーが発生しました');
+            console.error('Auth error:', error);
         }
     };
 

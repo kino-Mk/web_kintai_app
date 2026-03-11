@@ -18,6 +18,7 @@ export interface Employee {
     id: string;
     name: string;
     password?: string;
+    passwordHash?: string;
     email?: string;
     paidLeave?: number;
     docId?: string;
