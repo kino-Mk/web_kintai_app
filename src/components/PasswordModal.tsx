@@ -91,15 +91,12 @@ export const PasswordModal: React.FC<Props> = ({ employee, onSuccess, onClose })
                 createdAt: serverTimestamp()
             });
 
-            // GAS WebApp URLをFirestoreのsettingsから取得
+            // GAS WebApp URLをFirestoreのsettingsから取得（未設定時はフォールバック）
+            const FALLBACK_GAS_URL = 'https://script.google.com/macros/s/AKfycbzz2AyAjBQFQhL2sofqH0woLy-KA9tH201r0cIDHd2RGgwMgEZjQym3yXSxIWwhjf4c/exec';
             const settingsDoc = await getDoc(doc(db, COLLECTIONS.SETTINGS, 'system'));
-            const gasUrl = settingsDoc.exists() ? settingsDoc.data().gasWebAppUrl : null;
-
-            if (!gasUrl) {
-                setResetMsg({ text: 'メール送信の設定がされていません。管理者に連絡してください。', type: 'error' });
-                setIsSubmitting(false);
-                return;
-            }
+            const gasUrl = (settingsDoc.exists() && settingsDoc.data().gasWebAppUrl)
+                ? settingsDoc.data().gasWebAppUrl
+                : FALLBACK_GAS_URL;
 
             const response = await fetch(gasUrl, {
                 method: 'POST',
