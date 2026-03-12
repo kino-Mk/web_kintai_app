@@ -4,6 +4,8 @@ import { db } from '../firebase';
 import { doc, getDoc, collection, addDoc, serverTimestamp, updateDoc, query, where, getDocs, deleteDoc } from 'firebase/firestore';
 import { X, Lock, Mail, ArrowLeft } from 'lucide-react';
 import { hashPassword, verifyPassword } from '../utils';
+import { Input } from './ui/Input';
+import { Button } from './ui/Button';
 
 interface Props {
     employee: Employee;
@@ -231,20 +233,20 @@ export const PasswordModal: React.FC<Props> = ({ employee, onSuccess, onClose })
                             </div>
 
                             <div className="space-y-2">
-                                <input
+                                <Input
                                     type="password"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     placeholder="パスワードを入力"
-                                    className="w-full p-4 rounded-xl bg-gray-50 border-none focus:ring-2 focus:ring-primary text-center tracking-widest text-lg"
+                                    className="text-center tracking-widest text-lg"
                                     autoFocus
                                 />
                                 {errorMsg && <p className="text-danger text-sm text-center font-bold mt-2">{errorMsg}</p>}
                             </div>
 
-                            <button type="submit" className="w-full bg-primary text-white p-4 rounded-xl font-bold hover:bg-primary-dark transition-colors shadow-lg shadow-primary/30 active:scale-95">
+                            <Button type="submit" className="w-full">
                                 認証する
-                            </button>
+                            </Button>
 
                             <div className="text-center mt-4">
                                 <button
@@ -275,12 +277,11 @@ export const PasswordModal: React.FC<Props> = ({ employee, onSuccess, onClose })
                                 </div>
                                 <div>
                                     <label className="text-xs font-bold text-gray-500 mb-1 block">メールアドレス</label>
-                                    <input
+                                    <Input
                                         type="email"
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
                                         placeholder="登録アドレスを入力"
-                                        className="w-full p-4 rounded-xl bg-gray-50 border-none focus:ring-2 focus:ring-primary"
                                         autoFocus
                                         disabled={isSubmitting}
                                     />
@@ -293,13 +294,14 @@ export const PasswordModal: React.FC<Props> = ({ employee, onSuccess, onClose })
                                 </div>
                             )}
 
-                            <button
+                            <Button
                                 type="submit"
                                 disabled={isSubmitting}
-                                className="w-full bg-orange-500 text-white p-4 rounded-xl font-bold hover:bg-orange-600 transition-colors shadow-lg shadow-orange-500/30 active:scale-95 disabled:opacity-50"
+                                isLoading={isSubmitting}
+                                className="w-full bg-orange-500 hover:bg-orange-600 shadow-orange-500/30"
                             >
                                 {isSubmitting ? '送信中...' : 'リセットリンクを送信'}
-                            </button>
+                            </Button>
 
                             <div className="text-center mt-4">
                                 <button

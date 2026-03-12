@@ -1,50 +1,24 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { db } from '../firebase';
-import { collection, query, where, orderBy, onSnapshot, doc, deleteDoc, getDocs } from 'firebase/firestore';
-import { AttendanceRecord, Employee, COLLECTIONS } from '../types';
+import { collection, query, orderBy, doc, deleteDoc, getDocs } from 'firebase/firestore';
+import { AttendanceRecord, COLLECTIONS } from '../types';
 import { toDate, formatTimeStr, formatDateStr, formatCsvTime, downloadCSV } from '../utils';
 import { Calendar as CalendarIcon, User, Search, Trash2, Download } from 'lucide-react';
 import { useModal } from '../contexts/ModalContext';
+import { useEmployees } from '../hooks/useEmployees';
+import { useAttendanceByDate } from '../hooks/useAttendance';
+import { useQueryClient } from '@tanstack/react-query';
 
 export const AdminDailyTab: React.FC = () => {
     const [selectedDate, setSelectedDate] = useState(formatDateStr(new Date()));
-    const [employees, setEmployees] = useState<Employee[]>([]);
-    const [records, setRecords] = useState<AttendanceRecord[]>([]);
-    const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('');
     const { showAlert, showConfirm } = useModal();
+    const queryClient = useQueryClient();
 
-    useEffect(() => {
-        // 従業員一覧を取得
-        const qEmp = query(collection(db, COLLECTIONS.EMPLOYEES), orderBy('name', 'asc'));
-        const unsubEmp = onSnapshot(qEmp, (snapshot) => {
-            setEmployees(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Employee[]);
-        });
+    const { data: employees = [], isLoading: loadingEmps } = useEmployees();
+    const { data: records = [], isLoading: loadingRecords } = useAttendanceByDate(selectedDate);
 
-        return () => unsubEmp();
-    }, []);
-
-    useEffect(() => {
-        setLoading(true);
-        const start = new Date(selectedDate);
-        start.setHours(0, 0, 0, 0);
-        const end = new Date(selectedDate);
-        end.setHours(23, 59, 59, 999);
-
-        const qAtt = query(
-            collection(db, COLLECTIONS.ATTENDANCE),
-            where('timestamp', '>=', start),
-            where('timestamp', '<=', end),
-            orderBy('timestamp', 'asc')
-        );
-
-        const unsubAtt = onSnapshot(qAtt, (snapshot) => {
-            setRecords(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as AttendanceRecord[]);
-            setLoading(false);
-        });
-
-        return () => unsubAtt();
-    }, [selectedDate]);
+    const isLoading = loadingEmps || loadingRecords;
 
     const filteredEmployees = employees.filter(emp =>
         !emp.isHidden && (emp.name.includes(filter) || emp.id.includes(filter))
@@ -59,6 +33,7 @@ export const AdminDailyTab: React.FC = () => {
         if (!(await showConfirm(`${empName} さんの ${typeStr} 打刻データを削除しますか？\n（この操作は元に戻せません）`))) return;
         try {
             await deleteDoc(doc(db, COLLECTIONS.ATTENDANCE, recordId));
+            await queryClient.invalidateQueries({ queryKey: ['attendance', 'date', selectedDate] });
             await showAlert('打刻データを削除しました。');
         } catch (error: any) {
             await showAlert(`削除に失敗しました: ${error.message}`);
@@ -131,7 +106,7 @@ export const AdminDailyTab: React.FC = () => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
-                            {loading ? (
+                            {isLoading ? (
                                 <tr><td colSpan={3} className="px-6 py-12 text-center text-gray-400 animate-pulse">読み込み中...</td></tr>
                             ) : filteredEmployees.length === 0 ? (
                                 <tr><td colSpan={3} className="px-6 py-12 text-center text-gray-400">対象者がいません。</td></tr>

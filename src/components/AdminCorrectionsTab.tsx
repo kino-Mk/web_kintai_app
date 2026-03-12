@@ -1,33 +1,20 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { db } from '../firebase';
-import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
+import { doc, updateDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
 import { StampCorrection, COLLECTIONS, ApplicationStatus } from '../types';
 import { toDate, formatFullDateTime } from '../utils';
 import { Check, X, Clock, Filter, AlertTriangle } from 'lucide-react';
 import { useModal } from '../contexts/ModalContext';
+import { useQueryClient } from '@tanstack/react-query';
+import { Button } from './ui/Button';
+import { useAdminCorrections } from '../hooks/useCorrections';
 
 export const AdminCorrectionsTab: React.FC = () => {
-    const [corrections, setCorrections] = useState<StampCorrection[]>([]);
-    const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState<'pending' | 'all'>('pending');
     const { showAlert, showConfirm } = useModal();
+    const queryClient = useQueryClient();
 
-    useEffect(() => {
-        let q = query(collection(db, COLLECTIONS.STAMP_CORRECTIONS), orderBy('createdAt', 'desc'));
-        if (filter === 'pending') {
-            q = query(collection(db, COLLECTIONS.STAMP_CORRECTIONS), where('status', '==', 'pending'), orderBy('createdAt', 'desc'));
-        }
-
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const list = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            })) as StampCorrection[];
-            setCorrections(list);
-            setLoading(false);
-        });
-        return () => unsubscribe();
-    }, [filter]);
+    const { data: corrections = [], isLoading: loading } = useAdminCorrections(filter);
 
     const handleStatusChange = async (corr: StampCorrection, newStatus: ApplicationStatus) => {
         const action = newStatus === 'approved' ? '承認' : '却下';
@@ -42,12 +29,16 @@ export const AdminCorrectionsTab: React.FC = () => {
         try {
             if (newStatus === 'approved' && corr.attendanceDocId) {
                 await deleteDoc(doc(db, COLLECTIONS.ATTENDANCE, corr.attendanceDocId));
+                // invalidate attendance queries as well
+                await queryClient.invalidateQueries({ queryKey: ['attendance'] });
             }
 
             await updateDoc(doc(db, COLLECTIONS.STAMP_CORRECTIONS, corr.id!), {
                 status: newStatus,
                 updatedAt: serverTimestamp()
             });
+
+            await queryClient.invalidateQueries({ queryKey: ['corrections'] });
 
             if (newStatus === 'approved') {
                 await showAlert('承認しました。該当の打刻データを削除しました。');
@@ -118,18 +109,22 @@ export const AdminCorrectionsTab: React.FC = () => {
                                 <div className="flex md:flex-col justify-end gap-2 shrink-0">
                                     {corr.status === 'pending' ? (
                                         <>
-                                            <button
+                                            <Button
                                                 onClick={() => handleStatusChange(corr, 'approved')}
-                                                className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-success text-white px-4 py-2 rounded-xl text-sm font-bold shadow-sm hover:bg-success-dark transition-all active:scale-95"
+                                                variant="primary"
+                                                leftIcon={<Check size={18} />}
+                                                className="flex-1 md:flex-none bg-success hover:bg-success-dark text-white shadow-sm"
                                             >
-                                                <Check size={18} /> 承認
-                                            </button>
-                                            <button
+                                                承認
+                                            </Button>
+                                            <Button
                                                 onClick={() => handleStatusChange(corr, 'rejected')}
-                                                className="flex-1 md:flex-none flex items-center justify-center gap-2 border border-danger text-danger px-4 py-2 rounded-xl text-sm font-bold hover:bg-danger-bg transition-all active:scale-95"
+                                                variant="outline"
+                                                leftIcon={<X size={18} />}
+                                                className="flex-1 md:flex-none border-danger text-danger hover:bg-danger-bg hover:border-danger hover:text-danger"
                                             >
-                                                <X size={18} /> 却下
-                                            </button>
+                                                却下
+                                            </Button>
                                         </>
                                     ) : (
                                         <span className={`px-4 py-2 rounded-xl text-sm font-bold text-center ${corr.status === 'approved' ? 'bg-success-bg text-success' : 'bg-danger-bg text-danger'

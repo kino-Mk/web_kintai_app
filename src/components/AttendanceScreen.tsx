@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { db } from '../firebase';
-import { collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp } from 'firebase/firestore';
-import { Employee, COLLECTIONS, AttendanceRecord, AttendanceType } from '../types';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { Employee, COLLECTIONS, AttendanceType } from '../types';
 import { toDate, formatTimeStr, getStartOfToday } from '../utils';
 import { Clock, Play, Square, MessageSquare, ArrowLeft, LogOut } from 'lucide-react';
 import { useModal } from '../contexts/ModalContext';
+import { useAttendanceByEmployee } from '../hooks/useAttendance';
+import { useQueryClient } from '@tanstack/react-query';
+import { Button } from './ui/Button';
 
 interface Props {
     employee: Employee;
@@ -15,39 +18,27 @@ interface Props {
 
 export const AttendanceScreen: React.FC<Props> = ({ employee, onBack, onComplete, onGoApplication }) => {
     const [now, setNow] = useState(new Date());
-    const [records, setRecords] = useState<AttendanceRecord[]>([]);
     const [remark, setRemark] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const { showAlert, showConfirm } = useModal();
+    const queryClient = useQueryClient();
 
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+    const { data: monthRecords = [], isLoading } = useAttendanceByEmployee(employee.id, now);
+    
+    // 今日の記録だけを抽出
+    const todayStart = getStartOfToday().getTime();
+    const records = monthRecords.filter(r => {
+        const d = toDate(r.timestamp);
+        return d && d.getTime() >= todayStart;
+    });
 
     // 時計の更新
     useEffect(() => {
         const timer = setInterval(() => setNow(new Date()), 1000);
         return () => clearInterval(timer);
     }, []);
-
-    // 当日の記録を取得
-    useEffect(() => {
-        const today = getStartOfToday();
-        const q = query(
-            collection(db, COLLECTIONS.ATTENDANCE),
-            where('empId', '==', employee.id),
-            where('timestamp', '>=', today),
-            orderBy('timestamp', 'desc')
-        );
-
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const list = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            })) as AttendanceRecord[];
-            setRecords(list);
-        });
-
-        return () => unsubscribe();
-    }, [employee.id]);
 
     const handleStamp = async (type: AttendanceType) => {
         if (isMobile) {
@@ -88,12 +79,16 @@ export const AttendanceScreen: React.FC<Props> = ({ employee, onBack, onComplete
                 empId: employee.id,
                 empName: employee.name,
                 type,
+                remark,
                 timestamp: serverTimestamp(),
                 createdAt: serverTimestamp()
             });
 
+            // キャッシュを無効化して再取得をトリガー
+            await queryClient.invalidateQueries({ queryKey: ['attendance'] });
+
             setRemark('');
-            await showAlert(`${typeLabel} を打刻しました。`); // Updated alert message
+            await showAlert(`${typeLabel} を打刻しました。`);
             if (onComplete) onComplete();
         } catch (error: any) {
             console.error("Stamp error:", error);
@@ -139,32 +134,33 @@ export const AttendanceScreen: React.FC<Props> = ({ employee, onBack, onComplete
                                 勤怠や休暇の登録は申請メニューから行ってください。
                             </span>
                         </p>
-                        <button
+                        <Button
                             onClick={onGoApplication}
-                            className="w-full bg-primary text-white p-4 rounded-xl font-bold shadow-lg shadow-primary/30 active:scale-95 transition-all text-center block"
+                            className="w-full h-14 text-lg"
                         >
                             各種申請メニューへ
-                        </button>
+                        </Button>
                     </div>
                 ) : (
                     <>
                         <div className="flex flex-col md:flex-row gap-4 mb-8">
-                            <button
+                            <Button
                                 onClick={() => handleStamp('in')}
-                                disabled={isSubmitting}
-                                className="flex-1 bg-primary text-white p-6 rounded-2xl shadow-lg hover:shadow-xl hover:bg-primary-dark transition-all disabled:opacity-50 flex items-center justify-center gap-3 text-xl font-bold active:scale-95"
+                                isLoading={isSubmitting}
+                                leftIcon={<Play size={24} fill="currentColor" />}
+                                className="flex-1 h-16 text-xl"
                             >
-                                <Play size={24} fill="currentColor" />
                                 出勤
-                            </button>
-                            <button
+                            </Button>
+                            <Button
                                 onClick={() => handleStamp('out')}
-                                disabled={isSubmitting}
-                                className="flex-1 bg-white border-2 border-primary text-primary p-6 rounded-2xl hover:bg-primary-light transition-all disabled:opacity-50 flex items-center justify-center gap-3 text-xl font-bold active:scale-95"
+                                isLoading={isSubmitting}
+                                variant="outline"
+                                leftIcon={<Square size={24} fill="currentColor" />}
+                                className="flex-1 h-16 text-xl border-primary text-primary hover:bg-primary/5"
                             >
-                                <Square size={24} fill="currentColor" />
                                 退勤
-                            </button>
+                            </Button>
                         </div>
 
                         <div className="relative">
@@ -182,14 +178,16 @@ export const AttendanceScreen: React.FC<Props> = ({ employee, onBack, onComplete
 
             <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
                 <h3 className="font-bold text-gray-700 mb-4 pb-2 border-b border-gray-50">本日の記録</h3>
-                {records.length === 0 ? (
+                {isLoading ? (
+                    <div className="text-center py-8 text-gray-400 animate-pulse">読み込み中...</div>
+                ) : records.length === 0 ? (
                     <p className="text-center py-8 text-gray-400">本日の記録はまだありません。</p>
                 ) : (
                     <div className="space-y-3">
                         {records.map((rec) => (
                             <div key={rec.id} className="flex items-center justify-between p-4 rounded-xl bg-gray-50">
                                 <div className="flex items-center gap-4">
-                                    <span className={`px - 3 py - 1 rounded - full text - xs font - bold ${rec.type === 'in' ? 'bg-success-bg text-success' : 'bg-primary-light text-primary'} `}>
+                                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${rec.type === 'in' ? 'bg-success-bg text-success' : 'bg-primary-light text-primary'}`}>
                                         {rec.type === 'in' ? '出勤' : '退勤'}
                                     </span>
                                     <span className="font-mono font-bold text-gray-700">{formatTimeStr(toDate(rec.timestamp))}</span>

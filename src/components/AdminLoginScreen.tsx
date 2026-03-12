@@ -5,6 +5,8 @@ import { COLLECTIONS } from '../types';
 import { Lock, Shield } from 'lucide-react';
 import { hashPassword, verifyPassword } from '../utils';
 import { useModal } from '../contexts/ModalContext';
+import { Input } from './ui/Input';
+import { Button } from './ui/Button';
 
 interface Props {
     onSuccess: () => void;
@@ -150,12 +152,12 @@ export const AdminLoginScreen: React.FC<Props> = ({ onSuccess }) => {
                                 <label className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2 px-1">
                                     <Lock size={14} className="text-primary" /> 新しい管理者パスワード
                                 </label>
-                                <input
+                                <Input
                                     type="password"
                                     value={newPassword}
                                     onChange={(e) => setNewPassword(e.target.value)}
                                     placeholder="4文字以上"
-                                    className="w-full p-4 rounded-xl bg-gray-50 border-none focus:ring-2 focus:ring-primary text-center tracking-widest text-lg"
+                                    className="text-center tracking-widest text-lg"
                                     autoFocus
                                     disabled={isLoading}
                                 />
@@ -164,35 +166,36 @@ export const AdminLoginScreen: React.FC<Props> = ({ onSuccess }) => {
                                 <label className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2 px-1">
                                     <Lock size={14} className="text-primary" /> 確認
                                 </label>
-                                <input
+                                <Input
                                     type="password"
                                     value={confirmPassword}
                                     onChange={(e) => setConfirmPassword(e.target.value)}
                                     placeholder="もう一度入力"
-                                    className="w-full p-4 rounded-xl bg-gray-50 border-none focus:ring-2 focus:ring-primary text-center tracking-widest text-lg"
+                                    className="text-center tracking-widest text-lg"
                                     disabled={isLoading}
                                 />
                             </div>
 
                             {errorMsg && <p className="text-danger text-sm text-center font-bold">{errorMsg}</p>}
 
-                            <button
+                            <Button
                                 type="submit"
                                 disabled={isLoading}
-                                className="w-full bg-primary text-white p-4 rounded-xl font-bold hover:bg-primary-dark transition-colors shadow-lg shadow-primary/30 active:scale-95 disabled:opacity-50"
+                                isLoading={isLoading}
+                                className="w-full"
                             >
                                 {isLoading ? '設定中...' : 'パスワードを設定して開始'}
-                            </button>
+                            </Button>
                         </form>
                     ) : (
                         <form onSubmit={handleLogin} className="space-y-6">
                             <div className="space-y-2">
-                                <input
+                                <Input
                                     type="password"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     placeholder="管理者パスワードを入力"
-                                    className="w-full p-4 rounded-xl bg-gray-50 border-none focus:ring-2 focus:ring-primary text-center tracking-widest text-lg"
+                                    className="text-center tracking-widest text-lg"
                                     autoFocus
                                     disabled={isLoading}
                                 />
@@ -200,13 +203,14 @@ export const AdminLoginScreen: React.FC<Props> = ({ onSuccess }) => {
 
                             {errorMsg && <p className="text-danger text-sm text-center font-bold">{errorMsg}</p>}
 
-                            <button
+                            <Button
                                 type="submit"
                                 disabled={isLoading}
-                                className="w-full bg-primary text-white p-4 rounded-xl font-bold hover:bg-primary-dark transition-colors shadow-lg shadow-primary/30 active:scale-95 disabled:opacity-50"
+                                isLoading={isLoading}
+                                className="w-full"
                             >
                                 {isLoading ? '認証中...' : '管理画面にログイン'}
-                            </button>
+                            </Button>
                         </form>
                     )}
                 </div>

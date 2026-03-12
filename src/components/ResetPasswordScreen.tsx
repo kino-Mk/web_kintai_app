@@ -3,6 +3,8 @@ import { db } from '../firebase';
 import { collection, query, where, getDocs, deleteDoc, updateDoc, doc } from 'firebase/firestore';
 import { Lock, AlertTriangle, CheckCircle } from 'lucide-react';
 import { hashPassword } from '../utils';
+import { Input } from './ui/Input';
+import { Button } from './ui/Button';
 
 interface Props {
     token: string;
@@ -133,9 +135,9 @@ export const ResetPasswordScreen: React.FC<Props> = ({ token, onHome }) => {
                 </div>
                 <h2 className="text-xl font-bold text-gray-800 mb-2">リンクが無効です</h2>
                 <p className="text-danger font-medium mb-6">{errorMsg}</p>
-                <button onClick={onHome} className="bg-gray-100 text-gray-600 px-6 py-3 rounded-xl font-bold hover:bg-gray-200 transition-colors">
+                <Button onClick={onHome} variant="outline" className="w-full">
                     トップページに戻る
-                </button>
+                </Button>
             </div>
         );
     }
@@ -148,9 +150,9 @@ export const ResetPasswordScreen: React.FC<Props> = ({ token, onHome }) => {
                 </div>
                 <h2 className="text-xl font-bold text-gray-800 mb-2">パスワードを更新しました</h2>
                 <p className="text-gray-500 mb-6">新しいパスワードで認証・申請を行えます。</p>
-                <button onClick={onHome} className="bg-primary text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-primary/30 hover:bg-primary-dark transition-colors active:scale-95">
+                <Button onClick={onHome} variant="primary" className="w-full">
                     トップページへ
-                </button>
+                </Button>
             </div>
         );
     }
@@ -167,23 +169,21 @@ export const ResetPasswordScreen: React.FC<Props> = ({ token, onHome }) => {
 
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                    <input
+                    <Input
                         type="password"
                         placeholder="新しいパスワード"
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
-                        className="w-full p-4 rounded-xl bg-gray-50 border-none focus:ring-2 focus:ring-primary"
                         autoFocus
                         disabled={isSubmitting}
                     />
                 </div>
                 <div>
-                    <input
+                    <Input
                         type="password"
                         placeholder="確認のためもう一度入力"
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
-                        className="w-full p-4 rounded-xl bg-gray-50 border-none focus:ring-2 focus:ring-primary"
                         disabled={isSubmitting}
                     />
                 </div>
@@ -194,13 +194,14 @@ export const ResetPasswordScreen: React.FC<Props> = ({ token, onHome }) => {
                     </div>
                 )}
 
-                <button
+                <Button
                     type="submit"
                     disabled={isSubmitting}
-                    className="w-full mt-4 bg-primary text-white p-4 rounded-xl font-bold hover:bg-primary-dark transition-colors shadow-lg shadow-primary/30 active:scale-95 disabled:opacity-50"
+                    isLoading={isSubmitting}
+                    className="w-full mt-4"
                 >
                     {isSubmitting ? '更新中...' : 'パスワードを更新'}
-                </button>
+                </Button>
             </form>
         </div>
     );

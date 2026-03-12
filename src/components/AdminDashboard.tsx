@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
-import { collection, query, where, onSnapshot, getDocs, orderBy } from 'firebase/firestore';
-import { COLLECTIONS, Employee, AttendanceRecord, Application } from '../types';
+import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
+import { COLLECTIONS, AttendanceRecord } from '../types';
 import { AlertCircle, FileText, Clock, ChevronRight, User } from 'lucide-react';
 import { getStartOfToday } from '../utils';
 import { subDays, format, startOfDay, endOfDay } from 'date-fns';
+import { useEmployees } from '../hooks/useEmployees';
+import { usePendingApplications } from '../hooks/useApplications';
+import { Card } from './ui/Card';
 
 interface DashboardAlert {
     type: 'missing-checkout' | 'pending-application';
@@ -16,49 +19,31 @@ interface DashboardAlert {
 }
 
 export const AdminDashboard: React.FC = () => {
-    const [alerts, setAlerts] = useState<DashboardAlert[]>([]);
-    const [loading, setLoading] = useState(true);
+    const { data: employees = [], isLoading: loadingEmps } = useEmployees();
+    const { data: pendingApps = [], isLoading: loadingApps } = usePendingApplications();
+    const [missingAlerts, setMissingAlerts] = useState<DashboardAlert[]>([]);
+    const [loadingMissing, setLoadingMissing] = useState(true);
+
+    const appAlerts: DashboardAlert[] = pendingApps.map(app => ({
+        type: 'pending-application',
+        title: '未処理の申請',
+        description: `${app.type}申請があります (${app.reason || '理由なし'})`,
+        date: app.date,
+        empName: app.empName,
+        empId: app.empId
+    }));
 
     useEffect(() => {
-        const fetchEmployees = async () => {
-            const q = query(collection(db, COLLECTIONS.EMPLOYEES), where('isHidden', '==', false));
-            const snap = await getDocs(q);
-            const list = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Employee[];
-            return list;
-        };
+        if (loadingEmps || employees.length === 0) {
+            setLoadingMissing(false);
+            return;
+        }
 
-        const setupListeners = async (emps: Employee[]) => {
-            // Pending Applications Listener
-            const qApp = query(
-                collection(db, COLLECTIONS.APPLICATIONS),
-                where('status', '==', 'pending'),
-                orderBy('createdAt', 'desc')
-            );
-
-            const unsubApp = onSnapshot(qApp, (snapshot) => {
-                const appAlerts = snapshot.docs.map(doc => {
-                    const data = doc.data() as Application;
-                    return {
-                        type: 'pending-application' as const,
-                        title: '未処理の申請',
-                        description: `${data.type}申請があります (${data.reason || '理由なし'})`,
-                        date: data.date,
-                        empName: data.empName,
-                        empId: data.empId
-                    };
-                });
-
-                updateAlerts(prev => {
-                    const otherAlerts = prev.filter(a => a.type !== 'pending-application');
-                    return [...appAlerts, ...otherAlerts];
-                });
-            });
-
-            // Missing Checkouts (logic: In without subsequent Out on same day)
-            // This is complex for real-time listener if we want "past 7 days"
-            // Let's do a one-time check for the dashboard load
-            const checkMissingCheckouts = async () => {
-                const missingAlerts: DashboardAlert[] = [];
+        const checkMissingCheckouts = async () => {
+            setLoadingMissing(true);
+            const newMissingAlerts: DashboardAlert[] = [];
+            
+            try {
                 for (let i = 1; i <= 7; i++) {
                     const day = subDays(getStartOfToday(), i);
                     const dayStart = startOfDay(day);
@@ -74,12 +59,12 @@ export const AdminDashboard: React.FC = () => {
                     const attSnap = await getDocs(qAtt);
                     const dayRecords = attSnap.docs.map(doc => doc.data() as AttendanceRecord);
 
-                    emps.forEach(emp => {
+                    employees.forEach(emp => {
                         const empRecs = dayRecords.filter(r => r.empId === emp.id);
                         if (empRecs.length > 0) {
                             const lastType = empRecs[empRecs.length - 1].type;
                             if (lastType === 'in') {
-                                missingAlerts.push({
+                                newMissingAlerts.push({
                                     type: 'missing-checkout',
                                     title: '打刻漏れ(退勤)',
                                     description: `${format(day, 'MM/dd')} の退勤打刻がありません`,
@@ -91,24 +76,19 @@ export const AdminDashboard: React.FC = () => {
                         }
                     });
                 }
-
-                updateAlerts(prev => {
-                    const otherAlerts = prev.filter(a => a.type !== 'missing-checkout');
-                    return [...otherAlerts, ...missingAlerts];
-                });
-            };
-
-            checkMissingCheckouts();
-            setLoading(false);
-            return () => unsubApp();
+                setMissingAlerts(newMissingAlerts);
+            } catch (error) {
+                console.error("Error fetching missing checkouts:", error);
+            } finally {
+                setLoadingMissing(false);
+            }
         };
 
-        fetchEmployees().then(setupListeners);
-    }, []);
+        checkMissingCheckouts();
+    }, [employees, loadingEmps]);
 
-    const updateAlerts = (fn: (prev: DashboardAlert[]) => DashboardAlert[]) => {
-        setAlerts(fn);
-    };
+    const alerts = [...appAlerts, ...missingAlerts];
+    const isLoading = loadingEmps || loadingApps || loadingMissing;
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
@@ -118,7 +98,7 @@ export const AdminDashboard: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 flex items-center justify-between">
+                <Card className="rounded-[2.5rem] border-gray-100 flex items-center justify-between p-8">
                     <div className="flex items-center gap-4">
                         <div className="w-14 h-14 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-500">
                             <FileText size={28} />
@@ -129,11 +109,11 @@ export const AdminDashboard: React.FC = () => {
                         </div>
                     </div>
                     <div className="text-5xl font-black text-amber-500">
-                        {alerts.filter(a => a.type === 'pending-application').length}
+                        {appAlerts.length}
                     </div>
-                </div>
+                </Card>
 
-                <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 flex items-center justify-between">
+                <Card className="rounded-[2.5rem] border-gray-100 flex items-center justify-between p-8">
                     <div className="flex items-center gap-4">
                         <div className="w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center text-red-500">
                             <AlertCircle size={28} />
@@ -144,12 +124,12 @@ export const AdminDashboard: React.FC = () => {
                         </div>
                     </div>
                     <div className="text-5xl font-black text-red-500">
-                        {alerts.filter(a => a.type === 'missing-checkout').length}
+                        {missingAlerts.length}
                     </div>
-                </div>
+                </Card>
             </div>
 
-            <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden">
+            <Card className="rounded-[2.5rem] border-gray-100 overflow-hidden">
                 <div className="p-6 border-b border-gray-50 flex items-center justify-between bg-gray-50/30">
                     <h3 className="font-bold text-gray-700 flex items-center gap-2">
                         <Clock size={18} className="text-primary" />
@@ -159,21 +139,19 @@ export const AdminDashboard: React.FC = () => {
                 </div>
 
                 <div className="divide-y divide-gray-50 max-h-[400px] overflow-y-auto custom-scrollbar">
-                    {loading ? (
+                    {isLoading ? (
                         <div className="p-12 text-center text-gray-400 animate-pulse">データを読み込み中...</div>
                     ) : alerts.length === 0 ? (
                         <div className="p-12 text-center text-gray-400">現在アラートはありません。</div>
                     ) : (
                         alerts.map((alert, i) => (
                             <div key={i} className="p-6 hover:bg-gray-50/80 transition-all group flex items-start gap-4">
-                                <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${alert.type === 'missing-checkout' ? 'bg-red-100 text-red-500' : 'bg-amber-100 text-amber-500'
-                                    }`}>
+                                <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${alert.type === 'missing-checkout' ? 'bg-red-100 text-red-500' : 'bg-amber-100 text-amber-500'}`}>
                                     {alert.type === 'missing-checkout' ? <AlertCircle size={20} /> : <FileText size={20} />}
                                 </div>
                                 <div className="flex-1">
                                     <div className="flex items-center justify-between mb-1">
-                                        <span className={`text-xs font-bold uppercase tracking-wider ${alert.type === 'missing-checkout' ? 'text-red-400' : 'text-amber-400'
-                                            }`}>
+                                        <span className={`text-xs font-bold uppercase tracking-wider ${alert.type === 'missing-checkout' ? 'text-red-400' : 'text-amber-400'}`}>
                                             {alert.title}
                                         </span>
                                         <span className="text-xs text-gray-400 font-mono">{alert.date}</span>
@@ -191,7 +169,7 @@ export const AdminDashboard: React.FC = () => {
                         ))
                     )}
                 </div>
-            </div>
+            </Card>
         </div>
     );
 };

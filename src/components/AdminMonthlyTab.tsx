@@ -1,55 +1,53 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { db } from '../firebase';
-import { collection, query, where, orderBy, onSnapshot, getDocs } from 'firebase/firestore';
-import { AttendanceRecord, Employee, COLLECTIONS, Application } from '../types';
+import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
+import { AttendanceRecord, COLLECTIONS, Application } from '../types';
 import { toDate, getMonthCycleRange, calculateRemainingPaidLeave, formatDateStr, formatCsvTime, downloadCSV } from '../utils';
 import { User, ChevronRight, Download } from 'lucide-react';
 import { useModal } from '../contexts/ModalContext';
+import { useEmployees } from '../hooks/useEmployees';
+import { useQuery } from '@tanstack/react-query';
+import { Button } from './ui/Button';
 
 export const AdminMonthlyTab: React.FC = () => {
     const [selectedMonth, setSelectedMonth] = useState(formatDateStr(new Date()).substring(0, 7)); // YYYY-MM
-    const [employees, setEmployees] = useState<Employee[]>([]);
-    const [records, setRecords] = useState<AttendanceRecord[]>([]);
-    const [leaveGrants, setLeaveGrants] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [allApprovedApps, setAllApprovedApps] = useState<Application[]>([]);
     const { showAlert } = useModal();
 
-    useEffect(() => {
-        // 従業員と有給付与情報を取得
-        const fetchData = async () => {
-            const qEmp = query(collection(db, COLLECTIONS.EMPLOYEES), orderBy('name', 'asc'));
-            const snapEmp = await getDocs(qEmp);
-            setEmployees(snapEmp.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Employee[]);
+    const { data: employees = [], isLoading: loadEmp } = useEmployees();
 
-            const qGrants = query(collection(db, COLLECTIONS.LEAVE_GRANTS));
-            const snapGrants = await getDocs(qGrants);
-            setLeaveGrants(snapGrants.docs.map(doc => doc.data()));
+    const { data: leaveGrants = [], isLoading: loadGrants } = useQuery({
+        queryKey: ['leaveGrants'],
+        queryFn: async () => {
+            const snap = await getDocs(query(collection(db, COLLECTIONS.LEAVE_GRANTS)));
+            return snap.docs.map(doc => doc.data());
+        }
+    });
 
-            // 全期間の承認済み有給申請を取得（残日数計算用）
-            const qApps = query(collection(db, COLLECTIONS.APPLICATIONS), where('status', '==', 'approved'));
-            const snapApps = await getDocs(qApps);
-            setAllApprovedApps(snapApps.docs.map(doc => doc.data()) as Application[]);
-        };
-        fetchData();
-    }, []);
+    const { data: allApprovedApps = [], isLoading: loadApps } = useQuery({
+        queryKey: ['applications', 'approved'],
+        queryFn: async () => {
+            const snap = await getDocs(query(collection(db, COLLECTIONS.APPLICATIONS), where('status', '==', 'approved')));
+            return snap.docs.map(doc => doc.data() as Application);
+        }
+    });
 
-    useEffect(() => {
-        const { start, end } = getMonthCycleRange(selectedMonth);
-        const qAtt = query(
-            collection(db, COLLECTIONS.ATTENDANCE),
-            where('timestamp', '>=', start),
-            where('timestamp', '<', end),
-            orderBy('timestamp', 'asc')
-        );
+    const { data: records = [], isLoading: loadRecords } = useQuery({
+        queryKey: ['attendance', 'cycle', selectedMonth],
+        queryFn: async () => {
+            const { start, end } = getMonthCycleRange(selectedMonth);
+            const qAtt = query(
+                collection(db, COLLECTIONS.ATTENDANCE),
+                where('timestamp', '>=', start),
+                where('timestamp', '<', end),
+                orderBy('timestamp', 'asc')
+            );
+            const snap = await getDocs(qAtt);
+            return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }) as AttendanceRecord);
+        },
+        enabled: !!selectedMonth
+    });
 
-        const unsubscribe = onSnapshot(qAtt, (snapshot) => {
-            setRecords(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as AttendanceRecord[]);
-            setLoading(false);
-        });
-
-        return () => unsubscribe();
-    }, [selectedMonth]);
+    const loading = loadEmp || loadGrants || loadApps || loadRecords;
 
     const getStats = (empId: string) => {
         const empRecs = records.filter(r => r.empId === empId);
@@ -175,20 +173,21 @@ export const AdminMonthlyTab: React.FC = () => {
                     />
                 </div>
                 <div className="flex items-center gap-2">
-                    <button
+                    <Button
                         onClick={handleExportRawCSV}
-                        className="flex items-center gap-2 bg-white border border-gray-200 text-gray-600 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold hover:bg-gray-50 transition-all shadow-sm active:scale-95 whitespace-nowrap"
+                        variant="ghost"
+                        leftIcon={<Download size={16} />}
+                        className="bg-white border flex-1 md:flex-none border-gray-200 text-gray-600 rounded-xl whitespace-nowrap px-4"
                     >
-                        <Download size={16} />
                         全件CSV出力
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                         onClick={handleExportCSV}
-                        className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-xl text-xs sm:text-sm font-bold hover:bg-primary-dark transition-all shadow-sm active:scale-95 whitespace-nowrap"
+                        leftIcon={<Download size={16} />}
+                        className="rounded-xl flex-1 md:flex-none whitespace-nowrap px-4"
                     >
-                        <Download size={16} />
                         月次CSV出力
-                    </button>
+                    </Button>
                 </div>
             </div>
 
@@ -206,7 +205,7 @@ export const AdminMonthlyTab: React.FC = () => {
                         <tbody className="divide-y divide-gray-50">
                             {loading ? (
                                 <tr><td colSpan={4} className="px-6 py-12 text-center text-gray-400 animate-pulse">読み込み中...</td></tr>
-                            ) : employees.filter(e => !e.isHidden).map((emp) => {
+                            ) : employees.map((emp) => {
                                 const stats = getStats(emp.id);
                                 return (
                                     <tr key={emp.id} className="hover:bg-gray-50/50 transition-colors">

@@ -1,27 +1,27 @@
-import React, { ReactNode } from 'react';
+import React from 'react';
 import { LogOut, User, Calendar, ClipboardList, AlertCircle, Settings, Users, LayoutDashboard } from 'lucide-react';
+import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 
 interface LayoutProps {
-    children: ReactNode;
-    activeScreen: string;
-    onNavigate: (screen: string) => void;
     isAdmin?: boolean;
 }
 
-export const Layout: React.FC<LayoutProps> = ({ children, activeScreen, onNavigate, isAdmin = false }) => {
+export const Layout: React.FC<LayoutProps> = ({ isAdmin = false }) => {
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    const navigate = useNavigate();
+    const location = useLocation();
 
     const navItems = isAdmin ? [
-        { id: 'admin-dashboard', label: 'ダッシュボード', icon: LayoutDashboard },
-        { id: 'admin-employees', label: '従業員', icon: User },
-        { id: 'admin-attendance', label: '勤怠/申請', icon: ClipboardList },
-        { id: 'admin-rate-overview', label: '出勤率', icon: Users },
-        { id: 'admin-calendar', label: 'カレンダー', icon: Calendar },
-        { id: 'admin-error-logs', label: 'エラーログ', icon: AlertCircle },
-        { id: 'admin-settings', label: '設定', icon: Settings },
+        { path: '/admin', label: 'ダッシュボード', icon: LayoutDashboard },
+        { path: '/admin/employees', label: '従業員', icon: User },
+        { path: '/admin/attendance', label: '勤怠/申請', icon: ClipboardList },
+        { path: '/admin/rate-overview', label: '出勤率', icon: Users },
+        { path: '/admin/calendar', label: 'カレンダー', icon: Calendar },
+        { path: '/admin/error-logs', label: 'エラーログ', icon: AlertCircle },
+        { path: '/admin/settings', label: '設定', icon: Settings },
     ] : [
-        { id: 'selection', label: 'ホーム', icon: User },
-        ...(isMobile ? [{ id: 'application', label: '申請申告', icon: ClipboardList }] : []),
+        { path: '/', label: 'ホーム', icon: User },
+        ...(isMobile ? [{ path: '/application', label: '申請申告', icon: ClipboardList }] : []),
     ];
 
     return (
@@ -38,11 +38,11 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeScreen, onNaviga
                 <nav className="flex-1 px-4 space-y-1">
                     {navItems.map((item) => {
                         const Icon = item.icon;
-                        const isActive = activeScreen === item.id;
+                        const isActive = location.pathname === item.path || (item.path !== '/' && item.path !== '/admin' && location.pathname.startsWith(item.path));
                         return (
                             <button
-                                key={item.id}
-                                onClick={() => onNavigate(item.id)}
+                                key={item.path}
+                                onClick={() => navigate(item.path)}
                                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${isActive
                                     ? 'bg-primary text-white shadow-md'
                                     : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
@@ -67,11 +67,11 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeScreen, onNaviga
             <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 flex justify-around p-2 md:hidden z-50 shadow-lg">
                 {navItems.map((item) => {
                     const Icon = item.icon;
-                    const isActive = activeScreen === item.id;
+                    const isActive = location.pathname === item.path || (item.path !== '/' && item.path !== '/admin' && location.pathname.startsWith(item.path));
                     return (
                         <button
-                            key={item.id}
-                            onClick={() => onNavigate(item.id)}
+                            key={item.path}
+                            onClick={() => navigate(item.path)}
                             className={`flex flex-col items-center gap-1 p-2 min-w-[64px] rounded-lg transition-colors ${isActive ? 'text-primary' : 'text-gray-400'
                                 }`}
                         >
@@ -84,7 +84,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeScreen, onNaviga
 
             {/* Main Content */}
             <main className="max-w-6xl mx-auto p-4 md:p-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
-                {children}
+                <Outlet />
             </main>
         </div>
     );

@@ -1,9 +1,11 @@
-import React, { useEffect, useState } from 'react';
-import { db } from '../firebase';
-import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
-import { Employee, COLLECTIONS } from '../types';
+import React, { useState } from 'react';
+import { VirtuosoGrid } from 'react-virtuoso';
+import { Employee } from '../types';
 import { User, Search, AlertCircle } from 'lucide-react';
 import { StampCorrectionModal } from './StampCorrectionModal';
+import { useEmployees } from '../hooks/useEmployees';
+import { Skeleton } from './ui/Skeleton';
+import { Input } from './ui/Input';
 
 interface Props {
     onSelect: (employee: Employee) => void;
@@ -11,59 +13,41 @@ interface Props {
 }
 
 export const EmployeeSelection: React.FC<Props> = ({ onSelect, attendanceStates = {} }) => {
-    const [employees, setEmployees] = useState<Employee[]>([]);
-    const [loading, setLoading] = useState(true);
+    const { data: employees = [], isLoading } = useEmployees();
     const [filter, setFilter] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [activeTab, setActiveTab] = useState<'all' | 'in'>('all');
 
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-    useEffect(() => {
-        const q = query(collection(db, COLLECTIONS.EMPLOYEES), orderBy('name', 'asc'));
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const list = snapshot.docs.map(doc => {
-                const data = doc.data();
-                // パスワード関連フィールドをクライアント側で除去
-                const { password, passwordHash, ...safeData } = data;
-                return {
-                    id: doc.id,
-                    ...safeData
-                };
-            }) as Employee[];
-
-            setEmployees(list.filter(e => !e.isHidden));
-            setLoading(false);
-        }, (error) => {
-            console.error("Employee list error:", error);
-            setLoading(false);
-        });
-
-        return () => unsubscribe();
-    }, []);
-
-    if (loading) {
+    if (isLoading) {
         return (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[...Array(8)].map((_, i) => (
-                    <div key={i} className="animate-pulse bg-white border border-gray-100 h-32 rounded-2xl"></div>
+                    <Skeleton key={i} className="h-32 rounded-2xl" />
                 ))}
             </div>
         );
     }
 
+    const filteredEmployees = employees.filter(emp => {
+        const matchesFilter = emp.name.includes(filter) || emp.id.includes(filter);
+        if (activeTab === 'in') return matchesFilter && attendanceStates[emp.id] === 'in';
+        return matchesFilter;
+    });
+
     return (
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row gap-4">
-                <div className="relative flex-1">
-                    <input
+                <div className="flex-1">
+                    <Input
                         type="text"
                         placeholder="名前またはIDで検索..."
                         value={filter}
                         onChange={(e) => setFilter(e.target.value)}
-                        className="w-full pl-12 pr-6 py-4 rounded-2xl bg-gray-100/50 border-none focus:ring-2 focus:ring-primary transition-all text-lg placeholder:text-gray-400"
+                        icon={<Search size={24} />}
+                        className="py-4 rounded-2xl border-none shadow-sm text-lg"
                     />
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={24} />
                 </div>
                 <div className="flex bg-gray-100/50 p-1 rounded-2xl">
                     <button
@@ -81,31 +65,28 @@ export const EmployeeSelection: React.FC<Props> = ({ onSelect, attendanceStates 
                 </div>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar p-2">
-                {employees
-                    .filter(emp => {
-                        const matchesFilter = emp.name.includes(filter) || emp.id.includes(filter);
-                        if (activeTab === 'in') return matchesFilter && attendanceStates[emp.id] === 'in';
-                        return matchesFilter;
-                    })
-                    .map((emp) => {
-                        const status = attendanceStates[emp.id];
-                        return (
-                            <button
-                                key={emp.id}
-                                onClick={() => onSelect(emp)}
-                                className="flex flex-col items-center p-6 bg-white border border-gray-100 rounded-[2rem] hover:shadow-xl hover:border-primary-light transition-all group active:scale-95 relative overflow-hidden"
-                            >
-                                <div className={`absolute top-4 right-4 w-3 h-3 rounded-full shadow-sm ${status === 'in' ? 'bg-success animate-pulse' : 'bg-gray-200'}`}></div>
-                                <div className="w-16 h-16 rounded-full bg-gray-50 flex items-center justify-center text-gray-300 group-hover:bg-primary-light group-hover:text-primary transition-colors mb-4">
-                                    <User size={32} />
-                                </div>
-                                <span className="font-bold text-gray-700 group-hover:text-primary transition-colors line-clamp-1">{emp.name}</span>
-                                <span className="text-[10px] text-gray-300 mt-1 font-mono">{emp.id}</span>
-                            </button>
-                        );
-                    })}
-            </div>
+            <VirtuosoGrid
+                style={{ height: '500px' }}
+                data={filteredEmployees}
+                listClassName="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 p-2 custom-scrollbar"
+                itemClassName="flex"
+                itemContent={(_index, emp) => {
+                    const status = attendanceStates[emp.id];
+                    return (
+                        <button
+                            onClick={() => onSelect(emp)}
+                            className="w-full flex flex-col items-center p-6 bg-white border border-gray-100 rounded-[2rem] hover:shadow-xl hover:border-primary-light transition-all group active:scale-95 relative overflow-hidden"
+                        >
+                            <div className={`absolute top-4 right-4 w-3 h-3 rounded-full shadow-sm ${status === 'in' ? 'bg-success animate-pulse' : 'bg-gray-200'}`}></div>
+                            <div className="w-16 h-16 rounded-full bg-gray-50 flex items-center justify-center text-gray-300 group-hover:bg-primary-light group-hover:text-primary transition-colors mb-4">
+                                <User size={32} />
+                            </div>
+                            <span className="font-bold text-gray-700 group-hover:text-primary transition-colors line-clamp-1">{emp.name}</span>
+                            <span className="text-[10px] text-gray-300 mt-1 font-mono">{emp.id}</span>
+                        </button>
+                    );
+                }}
+            />
 
             <div className="pt-6 border-t border-gray-50">
                 {isMobile ? (

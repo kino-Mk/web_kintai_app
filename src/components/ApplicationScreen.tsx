@@ -5,6 +5,8 @@ import { Employee, COLLECTIONS } from '../types';
 import { calculateRemainingPaidLeave, sendGasNotification } from '../utils';
 import { Calendar, Clock, MessageSquare, ChevronLeft, Send, History } from 'lucide-react';
 import { useModal } from '../contexts/ModalContext';
+import { useQueryClient } from '@tanstack/react-query';
+import { Button } from './ui/Button';
 
 interface Props {
     employee: Employee;
@@ -21,6 +23,7 @@ export const ApplicationScreen: React.FC<Props> = ({ employee, onBack, onComplet
     const [remainingLeave, setRemainingLeave] = useState<number | null>(null);
     const [loading, setLoading] = useState(false);
     const { showAlert, showConfirm } = useModal();
+    const queryClient = useQueryClient();
 
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
@@ -39,13 +42,9 @@ export const ApplicationScreen: React.FC<Props> = ({ employee, onBack, onComplet
                     勤怠申請や休暇の登録は、スマートフォンからアクセスした時のみ利用可能な機能です。<br />
                     お手数ですが、スマートフォンから再度アクセスしてください。
                 </p>
-                <button
-                    onClick={onBack}
-                    className="bg-primary text-white px-8 py-3 rounded-xl font-bold shadow-md hover:bg-primary-dark transition-colors inline-flex items-center gap-2"
-                >
-                    <ChevronLeft size={20} />
+                <Button onClick={onBack} leftIcon={<ChevronLeft size={20} />}>
                     戻る
-                </button>
+                </Button>
             </div>
         );
     }
@@ -115,6 +114,8 @@ export const ApplicationScreen: React.FC<Props> = ({ employee, onBack, onComplet
             }
 
             await addDoc(collection(db, COLLECTIONS.APPLICATIONS), applicationData);
+
+            await queryClient.invalidateQueries({ queryKey: ['applications'] });
 
             // GAS通知（バックグラウンド）
             sendGasNotification({
@@ -237,15 +238,16 @@ export const ApplicationScreen: React.FC<Props> = ({ employee, onBack, onComplet
                     />
                 </div>
 
-                <button
+                <Button
                     type="submit"
-                    disabled={loading}
-                    className="w-full py-5 rounded-3xl bg-primary text-white font-bold text-lg shadow-xl shadow-primary/20 hover:bg-primary-dark transition-all active:scale-[0.98] flex items-center justify-center gap-2 mt-4 disabled:opacity-50"
+                    isLoading={loading}
+                    leftIcon={<Send size={20} />}
+                    className="w-full py-5 rounded-3xl text-lg mt-4 h-16"
                 >
-                    <Send size={20} />
-                    {loading ? '送信中...' : '申請を送信する'}
-                </button>
+                    申請を送信する
+                </Button>
             </form>
         </div>
     );
 };
+

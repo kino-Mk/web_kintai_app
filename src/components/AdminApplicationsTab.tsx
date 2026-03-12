@@ -1,33 +1,20 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { db } from '../firebase';
-import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, serverTimestamp, addDoc } from 'firebase/firestore';
+import { collection, doc, updateDoc, serverTimestamp, addDoc } from 'firebase/firestore';
 import { Application, COLLECTIONS, ApplicationStatus } from '../types';
 import { toDate, formatFullDateTime } from '../utils';
 import { Check, X, Clock, User, Filter } from 'lucide-react';
 import { useModal } from '../contexts/ModalContext';
+import { useAdminApplications } from '../hooks/useApplications';
+import { useQueryClient } from '@tanstack/react-query';
+import { Button } from './ui/Button';
 
 export const AdminApplicationsTab: React.FC = () => {
-    const [apps, setApps] = useState<Application[]>([]);
-    const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState<'pending' | 'all'>('pending');
     const { showAlert, showConfirm } = useModal();
+    const queryClient = useQueryClient();
 
-    useEffect(() => {
-        let q = query(collection(db, COLLECTIONS.APPLICATIONS), orderBy('createdAt', 'desc'));
-        if (filter === 'pending') {
-            q = query(collection(db, COLLECTIONS.APPLICATIONS), where('status', '==', 'pending'), orderBy('createdAt', 'desc'));
-        }
-
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const list = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            })) as Application[];
-            setApps(list);
-            setLoading(false);
-        });
-        return () => unsubscribe();
-    }, [filter]);
+    const { data: apps = [], isLoading: loading } = useAdminApplications(filter);
 
     const handleStatusChange = async (app: Application, newStatus: ApplicationStatus) => {
         const action = newStatus === 'approved' ? '承認' : '却下';
@@ -74,6 +61,8 @@ export const AdminApplicationsTab: React.FC = () => {
                 status: newStatus,
                 updatedAt: serverTimestamp()
             });
+
+            await queryClient.invalidateQueries({ queryKey: ['applications'] });
             await showAlert(`申請を${action}しました。`);
         } catch (error: any) {
             await showAlert(`更新に失敗しました: ${error.message}`);
@@ -140,18 +129,22 @@ export const AdminApplicationsTab: React.FC = () => {
                                 <div className="flex md:flex-col justify-end gap-2 shrink-0">
                                     {app.status === 'pending' ? (
                                         <>
-                                            <button
+                                            <Button
                                                 onClick={() => handleStatusChange(app, 'approved')}
-                                                className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-success text-white px-4 py-2 rounded-xl text-sm font-bold shadow-sm hover:bg-success-bg hover:text-success transition-all active:scale-95"
+                                                variant="primary"
+                                                leftIcon={<Check size={18} />}
+                                                className="flex-1 md:flex-none bg-success hover:bg-success-dark text-white shadow-sm"
                                             >
-                                                <Check size={18} /> 承認
-                                            </button>
-                                            <button
+                                                承認
+                                            </Button>
+                                            <Button
                                                 onClick={() => handleStatusChange(app, 'rejected')}
-                                                className="flex-1 md:flex-none flex items-center justify-center gap-2 border border-danger text-danger px-4 py-2 rounded-xl text-sm font-bold hover:bg-danger-bg transition-all active:scale-95"
+                                                variant="outline"
+                                                leftIcon={<X size={18} />}
+                                                className="flex-1 md:flex-none border-danger text-danger hover:bg-danger-bg hover:border-danger hover:text-danger"
                                             >
-                                                <X size={18} /> 却下
-                                            </button>
+                                                却下
+                                            </Button>
                                         </>
                                     ) : (
                                         <span className={`px-4 py-2 rounded-xl text-sm font-bold text-center ${app.status === 'approved' ? 'bg-success-bg text-success' : 'bg-danger-bg text-danger'
