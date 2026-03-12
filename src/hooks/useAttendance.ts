@@ -25,7 +25,7 @@ async function fetchAttendanceByEmployee(empId: string, month: Date): Promise<At
 
 export function useAttendanceByEmployee(empId: string | undefined, month: Date) {
     return useQuery({
-        queryKey: ['attendance', empId, month.getTime()],
+        queryKey: ['attendance', empId, month.getFullYear(), month.getMonth()],
         queryFn: () => fetchAttendanceByEmployee(empId!, month),
         enabled: !!empId,
     });

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { db } from '../firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { Employee, COLLECTIONS, AttendanceType } from '../types';
@@ -25,7 +25,8 @@ export const AttendanceScreen: React.FC<Props> = ({ employee, onBack, onComplete
 
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-    const { data: monthRecords = [], isLoading } = useAttendanceByEmployee(employee.id, now);
+    const monthStart = useMemo(() => new Date(now.getFullYear(), now.getMonth(), 1), [now.getFullYear(), now.getMonth()]);
+    const { data: monthRecords = [], isLoading } = useAttendanceByEmployee(employee.id, monthStart);
     
     // 今日の記録だけを抽出
     const todayStart = getStartOfToday().getTime();
