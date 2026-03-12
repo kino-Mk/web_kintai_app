@@ -38,7 +38,11 @@ function App() {
     useEffect(() => {
         initConsoleIntercept();
 
-        const params = new URLSearchParams(window.location.search);
+        // HashRouter 環境下でのパラメータ取得マニュアル処理
+        const search = window.location.search;
+        const hashSearch = window.location.hash.split('?')[1];
+        const params = new URLSearchParams(search || (hashSearch ? `?${hashSearch}` : ''));
+
         if (params.get('token')) {
             navigate(`/reset-password?token=${params.get('token')}`, { replace: true });
         } else if (params.get('mode') === 'admin') {
