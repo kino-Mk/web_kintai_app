@@ -45,8 +45,15 @@ function App() {
 
         if (params.get('token')) {
             navigate(`/reset-password?token=${params.get('token')}`, { replace: true });
+            // クエリパラメータをクリア（HashRouter 環境では search を消してもハッシュは残る）
+            if (search) window.history.replaceState({}, '', window.location.pathname + window.location.hash);
         } else if (params.get('mode') === 'admin') {
-            navigate('/admin', { replace: true });
+            // 現在のハッシュパスがすでに /admin で始まっていない場合のみ遷移
+            if (!window.location.hash.startsWith('#/admin')) {
+                navigate('/admin', { replace: true });
+            }
+            // クエリパラメータをクリア
+            if (search) window.history.replaceState({}, '', window.location.pathname + window.location.hash);
         }
 
         const handleError = (event: ErrorEvent) => {
