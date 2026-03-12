@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
-    base: './',
+    base: '/web_kintai_app/',
     build: {
         outDir: 'docs',
         emptyOutDir: true
