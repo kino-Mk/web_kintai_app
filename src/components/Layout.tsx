@@ -1,6 +1,6 @@
 import React from 'react';
 import { LogOut, User, Calendar, ClipboardList, AlertCircle, Settings, Users, LayoutDashboard } from 'lucide-react';
-import { useNavigate, useLocation, Outlet } from 'react-router-dom';
+import { NavLink, Outlet } from 'react-router-dom';
 
 interface LayoutProps {
     isAdmin?: boolean;
@@ -8,11 +8,9 @@ interface LayoutProps {
 
 export const Layout: React.FC<LayoutProps> = ({ isAdmin = false }) => {
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    const navigate = useNavigate();
-    const location = useLocation();
 
     const navItems = isAdmin ? [
-        { path: '/admin', label: 'ダッシュボード', icon: LayoutDashboard },
+        { path: '/admin', label: 'ダッシュボード', icon: LayoutDashboard, end: true },
         { path: '/admin/employees', label: '従業員', icon: User },
         { path: '/admin/attendance', label: '勤怠/申請', icon: ClipboardList },
         { path: '/admin/rate-overview', label: '出勤率', icon: Users },
@@ -20,7 +18,7 @@ export const Layout: React.FC<LayoutProps> = ({ isAdmin = false }) => {
         { path: '/admin/error-logs', label: 'エラーログ', icon: AlertCircle },
         { path: '/admin/settings', label: '設定', icon: Settings },
     ] : [
-        { path: '/', label: 'ホーム', icon: User },
+        { path: '/', label: 'ホーム', icon: User, end: true },
         ...(isMobile ? [{ path: '/application', label: '申請申告', icon: ClipboardList }] : []),
     ];
 
@@ -38,19 +36,21 @@ export const Layout: React.FC<LayoutProps> = ({ isAdmin = false }) => {
                 <nav className="flex-1 px-4 space-y-1">
                     {navItems.map((item) => {
                         const Icon = item.icon;
-                        const isActive = location.pathname === item.path || (item.path !== '/' && item.path !== '/admin' && location.pathname.startsWith(item.path));
                         return (
-                            <button
+                            <NavLink
                                 key={item.path}
-                                onClick={() => navigate(item.path)}
-                                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${isActive
-                                    ? 'bg-primary text-white shadow-md'
-                                    : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
-                                    }`}
+                                to={item.path}
+                                end={item.end}
+                                className={({ isActive }) =>
+                                    `w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${isActive
+                                        ? 'bg-primary text-white shadow-md'
+                                        : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
+                                    }`
+                                }
                             >
                                 <Icon size={18} />
                                 {item.label}
-                            </button>
+                            </NavLink>
                         );
                     })}
                 </nav>
@@ -67,17 +67,18 @@ export const Layout: React.FC<LayoutProps> = ({ isAdmin = false }) => {
             <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 flex justify-around p-2 md:hidden z-50 shadow-lg">
                 {navItems.map((item) => {
                     const Icon = item.icon;
-                    const isActive = location.pathname === item.path || (item.path !== '/' && item.path !== '/admin' && location.pathname.startsWith(item.path));
                     return (
-                        <button
+                        <NavLink
                             key={item.path}
-                            onClick={() => navigate(item.path)}
-                            className={`flex flex-col items-center gap-1 p-2 min-w-[64px] rounded-lg transition-colors ${isActive ? 'text-primary' : 'text-gray-400'
-                                }`}
+                            to={item.path}
+                            end={item.end}
+                            className={({ isActive }) =>
+                                `flex flex-col items-center gap-1 p-2 min-w-[64px] rounded-lg transition-colors ${isActive ? 'text-primary' : 'text-gray-400'}`
+                            }
                         >
                             <Icon size={20} />
                             <span className="text-[10px] font-medium">{item.label}</span>
-                        </button>
+                        </NavLink>
                     );
                 })}
             </nav>
