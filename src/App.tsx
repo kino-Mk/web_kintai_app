@@ -116,19 +116,15 @@ function App() {
                     } />
                     
                     <Route path="attendance/:empId" element={
-                        currentEmployee ? (
-                            <AttendanceScreen
-                                employee={currentEmployee}
-                                onBack={() => {
-                                    setCurrentEmployee(null);
-                                    navigate('/');
-                                }}
-                                onComplete={() => navigate('/')}
-                                onGoApplication={() => navigate('/application')}
-                            />
-                        ) : (
-                            <div className="text-center p-8">従業員情報がありません。<br/><button onClick={() => navigate('/')} className="text-primary mt-4 underline">ホームへ</button></div>
-                        )
+                        <AttendanceScreen
+                            employee={currentEmployee || undefined}
+                            onBack={() => {
+                                setCurrentEmployee(null);
+                                navigate('/');
+                            }}
+                            onComplete={() => navigate('/')}
+                            onGoApplication={() => navigate('/application')}
+                        />
                     } />
                     
                     <Route path="application" element={

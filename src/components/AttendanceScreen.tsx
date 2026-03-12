@@ -1,32 +1,39 @@
 import React, { useEffect, useState, useMemo } from 'react';
+import { useParams } from 'react-router-dom';
 import { db } from '../firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { Employee, COLLECTIONS, AttendanceType } from '../types';
 import { toDate, formatTimeStr, getStartOfToday } from '../utils';
-import { Clock, Play, Square, MessageSquare, ArrowLeft, LogOut } from 'lucide-react';
+import { Clock, Play, Square, MessageSquare, ArrowLeft, LogOut, AlertOctagon } from 'lucide-react';
 import { useModal } from '../contexts/ModalContext';
 import { useAttendanceByEmployee } from '../hooks/useAttendance';
+import { useEmployee } from '../hooks/useEmployees';
 import { useQueryClient } from '@tanstack/react-query';
 import { Button } from './ui/Button';
 
 interface Props {
-    employee: Employee;
+    employee?: Employee; // リロード時は undefined になるためオプションにする
     onBack: () => void;
     onComplete?: () => void;
     onGoApplication?: () => void;
 }
 
-export const AttendanceScreen: React.FC<Props> = ({ employee, onBack, onComplete, onGoApplication }) => {
+export const AttendanceScreen: React.FC<Props> = ({ employee: propEmployee, onBack, onComplete, onGoApplication }) => {
+    const { empId } = useParams<{ empId: string }>();
     const [now, setNow] = useState(new Date());
     const [remark, setRemark] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const { showAlert, showConfirm } = useModal();
     const queryClient = useQueryClient();
 
+    // 従業員情報の取得（プロップがない場合）
+    const { data: fetchedEmployee, isLoading: isEmployeeLoading, isError: isEmployeeError } = useEmployee(empId);
+    const employee = propEmployee || fetchedEmployee;
+
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
     const monthStart = useMemo(() => new Date(now.getFullYear(), now.getMonth(), 1), [now.getFullYear(), now.getMonth()]);
-    const { data: monthRecords = [], isLoading } = useAttendanceByEmployee(employee.id, monthStart);
+    const { data: monthRecords = [], isLoading: isRecordsLoading, isError: isRecordsError } = useAttendanceByEmployee(employee?.id, monthStart);
     
     // 今日の記録だけを抽出
     const todayStart = getStartOfToday().getTime();
@@ -42,6 +49,7 @@ export const AttendanceScreen: React.FC<Props> = ({ employee, onBack, onComplete
     }, []);
 
     const handleStamp = async (type: AttendanceType) => {
+        if (!employee) return;
         if (isMobile) {
             await showAlert('スマートフォンからの打刻は許可されていません。（申請のみ可能）');
             return;
@@ -98,6 +106,30 @@ export const AttendanceScreen: React.FC<Props> = ({ employee, onBack, onComplete
             setIsSubmitting(false);
         }
     };
+
+    if (isEmployeeLoading) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
+                <div className="w-12 h-12 border-4 border-gray-100 border-t-primary rounded-full animate-spin"></div>
+                <p className="text-gray-400 animate-pulse">従業員情報を読み込み中...</p>
+            </div>
+        );
+    }
+
+    if (isEmployeeError || !employee) {
+        return (
+            <div className="bg-white p-12 rounded-3xl shadow-sm border border-gray-100 text-center space-y-6">
+                <div className="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto">
+                    <AlertOctagon size={40} />
+                </div>
+                <h2 className="text-2xl font-bold text-gray-800">従業員情報が見つかりません</h2>
+                <p className="text-gray-500 max-w-sm mx-auto">URLが正しくないか、従業員データが削除された可能性があります。</p>
+                <Button onClick={onBack} variant="outline" className="w-full">
+                    ホームへ戻る
+                </Button>
+            </div>
+        );
+    }
 
     return (
         <div className="max-w-2xl mx-auto space-y-6">
@@ -179,8 +211,13 @@ export const AttendanceScreen: React.FC<Props> = ({ employee, onBack, onComplete
 
             <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
                 <h3 className="font-bold text-gray-700 mb-4 pb-2 border-b border-gray-50">本日の記録</h3>
-                {isLoading ? (
-                    <div className="text-center py-8 text-gray-400 animate-pulse">読み込み中...</div>
+                {isRecordsLoading ? (
+                    <div className="text-center py-8 text-gray-400 flex flex-col items-center gap-2">
+                        <div className="w-6 h-6 border-2 border-gray-100 border-t-primary rounded-full animate-spin"></div>
+                        <span className="animate-pulse">読み込み中...</span>
+                    </div>
+                ) : isRecordsError ? (
+                    <div className="text-center py-8 text-red-400">履歴の取得に失敗しました。</div>
                 ) : records.length === 0 ? (
                     <p className="text-center py-8 text-gray-400">本日の記録はまだありません。</p>
                 ) : (
