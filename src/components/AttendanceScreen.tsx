@@ -133,21 +133,26 @@ export const AttendanceScreen: React.FC<Props> = ({ employee: propEmployee, onBa
 
     return (
         <div className="max-w-2xl mx-auto space-y-6">
-            <button onClick={onBack} className="flex items-center gap-2 text-gray-400 hover:text-gray-600 transition-colors">
-                <ArrowLeft size={20} />
+            <Button
+                onClick={onBack}
+                variant="ghost"
+                leftIcon={<ArrowLeft size={20} />}
+                className="text-gray-400 hover:text-gray-600 -ml-2"
+            >
                 戻る
-            </button>
+            </Button>
 
             <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 text-center">
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-xl font-bold text-gray-800">{employee.name} さん</h2>
-                    <button
+                    <Button
                         onClick={onBack}
-                        className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+                        variant="ghost"
+                        className="text-gray-400 hover:text-red-500 rounded-full w-10 h-10 p-0"
                         title="ログアウト"
                     >
                         <LogOut size={20} />
-                    </button>
+                    </Button>
                 </div>
 
                 <div className="mb-8">

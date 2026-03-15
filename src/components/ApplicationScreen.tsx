@@ -92,6 +92,12 @@ export const ApplicationScreen: React.FC<Props> = ({ employee, onBack, onComplet
                 await showAlert('退勤時刻を入力してください。');
                 return;
             }
+
+            // 時刻の前後関係チェック
+            if (startTime && endTime && startTime >= endTime) {
+                await showAlert('終了時刻は開始時刻より後の時間を指定してください。');
+                return;
+            }
         }
 
         if (!(await showConfirm(`${type}の申請を送信しますか？`))) return;
@@ -141,9 +147,13 @@ export const ApplicationScreen: React.FC<Props> = ({ employee, onBack, onComplet
     return (
         <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="flex items-center justify-between mb-8">
-                <button onClick={onBack} className="p-2 hover:bg-gray-50 rounded-full transition-colors">
+                <Button
+                    onClick={onBack}
+                    variant="ghost"
+                    className="hover:bg-gray-50 rounded-full w-12 h-12 p-0"
+                >
                     <ChevronLeft size={24} className="text-gray-400" />
-                </button>
+                </Button>
                 <div className="text-right">
                     <h2 className="text-2xl font-bold text-gray-800">各種申請</h2>
                     <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">Application Form</p>

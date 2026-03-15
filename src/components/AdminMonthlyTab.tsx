@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
-import { db } from '../firebase';
-import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
-import { AttendanceRecord, COLLECTIONS, Application } from '../types';
-import { toDate, getMonthCycleRange, calculateRemainingPaidLeave, formatDateStr, formatCsvTime, downloadCSV } from '../utils';
+import { toDate, getMonthCycleRange, calculateRemainingPaidLeave, formatDateStr, exportRawAttendanceCSV, downloadCSV, formatCsvTime } from '../utils';
 import { User, ChevronRight, Download } from 'lucide-react';
 import { useModal } from '../contexts/ModalContext';
 import { useEmployees } from '../hooks/useEmployees';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from './ui/Button';
+import { db } from '../firebase';
+import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
+import { AttendanceRecord, COLLECTIONS, Application } from '../types';
 
 export const AdminMonthlyTab: React.FC = () => {
     const [selectedMonth, setSelectedMonth] = useState(formatDateStr(new Date()).substring(0, 7)); // YYYY-MM
@@ -138,25 +138,10 @@ export const AdminMonthlyTab: React.FC = () => {
 
     const handleExportRawCSV = async () => {
         try {
-            const snap = await getDocs(query(collection(db, COLLECTIONS.ATTENDANCE), orderBy('timestamp', 'desc')));
-            if (snap.empty) {
-                await showAlert('打刻データがありません。');
-                return;
-            }
-
-            let csvContent = "従業員ID,従業員名,打刻種別,打刻日時\n";
-            snap.forEach(doc => {
-                const data = doc.data() as AttendanceRecord;
-                if (!data.timestamp) return;
-                const dateObj = toDate(data.timestamp);
-                const formattedTime = formatCsvTime(dateObj);
-                csvContent += `${data.empId},${data.empName},${data.type === 'in' ? 1 : 2},${formattedTime}\n`;
-            });
-
-            downloadCSV(csvContent, 'attendance_raw.csv');
+            await exportRawAttendanceCSV();
+            await showAlert('全件 CSV をエクスポートしました。');
         } catch (error: any) {
-            console.error('Raw Export Error:', error);
-            await showAlert("全件エクスポートに失敗しました: " + error.message);
+            await showAlert("エクスポートに失敗しました: " + error.message);
         }
     };
 
@@ -224,9 +209,13 @@ export const AdminMonthlyTab: React.FC = () => {
                                             <span className="font-mono font-bold text-success">{stats.remainingLeave}</span> <span className="text-xs text-gray-400">日</span>
                                         </td>
                                         <td className="px-6 py-4 text-center">
-                                            <button className="p-2 text-gray-400 hover:text-primary transition-colors">
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="p-2 text-gray-400 hover:text-primary transition-colors h-10 w-10 p-0"
+                                            >
                                                 <ChevronRight size={20} />
-                                            </button>
+                                            </Button>
                                         </td>
                                     </tr>
                                 );

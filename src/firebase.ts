@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+import { getFirestore, enableIndexedDbPersistence } from "firebase/firestore";
 
 const firebaseConfig = {
     apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -13,4 +13,15 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
+
+// オフライン永続化の有効化
+enableIndexedDbPersistence(db).catch((err) => {
+    if (err.code === 'failed-precondition') {
+        // 複数タブで開いている場合などは失敗するが、動作には支障なし
+        console.warn('Firestore persistence failed-precondition: Multiple tabs open?');
+    } else if (err.code === 'unimplemented') {
+        // ブラウザがサポートしていない場合
+        console.warn('Firestore persistence unimplemented: Browser not supported');
+    }
+});
 

@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
-import { db } from '../firebase';
-import { collection, query, orderBy, doc, deleteDoc, getDocs } from 'firebase/firestore';
-import { AttendanceRecord, COLLECTIONS } from '../types';
-import { toDate, formatTimeStr, formatDateStr, formatCsvTime, downloadCSV } from '../utils';
+import { toDate, formatTimeStr, formatDateStr, exportRawAttendanceCSV } from '../utils';
 import { Calendar as CalendarIcon, User, Search, Trash2, Download } from 'lucide-react';
 import { useModal } from '../contexts/ModalContext';
 import { useEmployees } from '../hooks/useEmployees';
 import { useAttendanceByDate } from '../hooks/useAttendance';
 import { useQueryClient } from '@tanstack/react-query';
+import { db } from '../firebase';
+import { doc, deleteDoc } from 'firebase/firestore';
+import { COLLECTIONS } from '../types';
+import { Button } from './ui/Button';
 
 export const AdminDailyTab: React.FC = () => {
     const [selectedDate, setSelectedDate] = useState(formatDateStr(new Date()));
@@ -42,19 +43,9 @@ export const AdminDailyTab: React.FC = () => {
 
     const handleExportRawCSV = async () => {
         try {
-            const snapshot = await getDocs(query(collection(db, COLLECTIONS.ATTENDANCE), orderBy('timestamp', 'desc')));
-            let csvContent = "従業員ID, 従業員氏名, 打刻日時\n";
-
-            snapshot.forEach(doc => {
-                const data = doc.data() as AttendanceRecord;
-                const date = toDate(data.timestamp);
-                const formattedTime = formatCsvTime(date);
-                csvContent += `${data.empId}, ${data.empName}, ${formattedTime}\n`;
-            });
-
-            downloadCSV(csvContent, 'attendance_raw.csv');
+            await exportRawAttendanceCSV();
+            await showAlert('全件 CSV をエクスポートしました。');
         } catch (error: any) {
-            console.error('Export error:', error);
             await showAlert("エクスポートに失敗しました: " + error.message);
         }
     };
@@ -84,13 +75,15 @@ export const AdminDailyTab: React.FC = () => {
                     </div>
                 </div>
                 <div className="text-right flex flex-col md:flex-row items-end md:items-center gap-4">
-                    <button
+                    <Button
                         onClick={handleExportRawCSV}
-                        className="flex items-center gap-2 bg-white border border-gray-200 text-gray-600 px-4 py-2 rounded-xl text-sm font-bold hover:bg-gray-50 transition-all shadow-sm active:scale-95"
+                        variant="ghost"
+                        size="sm"
+                        leftIcon={<Download size={16} />}
+                        className="bg-white border border-gray-200 text-gray-600 rounded-xl"
                     >
-                        <Download size={16} />
                         全データCSV
-                    </button>
+                    </Button>
                     <span className="text-xs text-gray-400 font-bold">打刻件数: {records.length} 件</span>
                 </div>
             </div>

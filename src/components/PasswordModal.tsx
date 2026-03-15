@@ -216,9 +216,13 @@ export const PasswordModal: React.FC<Props> = ({ employee, onSuccess, onClose })
                     <h3 className="font-bold text-gray-800">
                         {view === 'password' ? '本人確認' : 'パスワード再設定'}
                     </h3>
-                    <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors">
+                    <Button
+                        onClick={onClose}
+                        variant="ghost"
+                        className="w-10 h-10 p-0 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100"
+                    >
                         <X size={20} />
-                    </button>
+                    </Button>
                 </div>
 
                 <div className="p-6">
@@ -249,13 +253,14 @@ export const PasswordModal: React.FC<Props> = ({ employee, onSuccess, onClose })
                             </Button>
 
                             <div className="text-center mt-4">
-                                <button
+                                <Button
                                     type="button"
                                     onClick={() => setView('reset')}
-                                    className="text-sm text-primary hover:underline"
+                                    variant="ghost"
+                                    className="text-sm text-primary hover:underline h-auto py-2"
                                 >
                                     パスワードを忘れた際はこちら
-                                </button>
+                                </Button>
                             </div>
                         </form>
                     ) : (
@@ -304,15 +309,16 @@ export const PasswordModal: React.FC<Props> = ({ employee, onSuccess, onClose })
                             </Button>
 
                             <div className="text-center mt-4">
-                                <button
+                                <Button
                                     type="button"
                                     onClick={() => setView('password')}
-                                    className="text-sm text-gray-500 hover:text-gray-700 flex items-center justify-center gap-1 mx-auto"
+                                    variant="ghost"
+                                    leftIcon={<ArrowLeft size={16} />}
+                                    className="text-sm text-gray-500 hover:text-gray-700 mx-auto h-auto py-2"
                                     disabled={isSubmitting}
                                 >
-                                    <ArrowLeft size={16} />
                                     認証画面に戻る
-                                </button>
+                                </Button>
                             </div>
                         </form>
                     )}

@@ -6,6 +6,7 @@ import { toDate, formatTimeStr, formatDateStr, getMonthCycleRange } from '../../
 import { useModal } from '../../contexts/ModalContext';
 import { Clock, Plus, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
+import { Button } from '../ui/Button';
 
 interface Props {
     employee: Employee;
@@ -155,14 +156,15 @@ export const TabDetailAttendance: React.FC<Props> = ({ employee }) => {
                             className="w-full p-2.5 rounded-xl bg-white border border-gray-200 focus:ring-2 focus:ring-primary text-sm"
                         />
                     </div>
-                    <button
+                    <Button
                         type="submit"
                         disabled={isAdding}
-                        className="bg-primary text-white p-2.5 px-6 rounded-xl font-bold shadow-lg shadow-primary/30 hover:bg-primary-dark transition-colors flex items-center gap-2 h-[42px] disabled:opacity-50"
+                        isLoading={isAdding}
+                        leftIcon={<Plus size={18} />}
+                        className="p-2.5 px-6 rounded-xl font-bold shadow-lg shadow-primary/30 h-[42px]"
                     >
-                        <Plus size={18} />
                         追加
-                    </button>
+                    </Button>
                 </form>
             </div>
 
@@ -225,13 +227,15 @@ export const TabDetailAttendance: React.FC<Props> = ({ employee }) => {
                                                 {rec.isCorrected && <span className="ml-2 text-primary">(申請による修正)</span>}
                                             </td>
                                             <td className="px-4 py-3 text-right">
-                                                <button
+                                                <Button
                                                     onClick={() => handleDeleteRecord(rec.id!, rec.timestamp, rec.type)}
-                                                    className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors h-8 w-8 p-0"
                                                     title="削除"
                                                 >
                                                     <Trash2 size={16} />
-                                                </button>
+                                                </Button>
                                             </td>
                                         </tr>
                                     );

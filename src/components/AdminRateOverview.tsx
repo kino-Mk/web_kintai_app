@@ -5,6 +5,7 @@ import { Employee, COLLECTIONS } from '../types';
 import { Download, Users } from 'lucide-react';
 import { format } from 'date-fns';
 import { useModal } from '../contexts/ModalContext';
+import { Button } from './ui/Button';
 
 export const AdminRateOverview: React.FC = () => {
     // defaults
@@ -145,14 +146,15 @@ export const AdminRateOverview: React.FC = () => {
                     <h2 className="text-2xl font-bold text-gray-800">出勤率一覧</h2>
                     <p className="text-gray-500">指定期間の従業員別の出勤率を集計します。（カレンダーの休日を反映）</p>
                 </div>
-                <button
+                <Button
                     onClick={handleDownloadCSV}
                     disabled={rates.length === 0}
-                    className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-6 py-3 rounded-2xl shadow-sm hover:bg-gray-50 transition-all font-bold disabled:opacity-50"
+                    variant="outline"
+                    leftIcon={<Download size={20} />}
+                    className="bg-white border border-gray-200 text-gray-700 px-6 py-3 rounded-2xl shadow-sm font-bold h-auto"
                 >
-                    <Download size={20} />
                     CSVダウンロード
-                </button>
+                </Button>
             </div>
 
             <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
@@ -190,13 +192,13 @@ export const AdminRateOverview: React.FC = () => {
                         </label>
                     </div>
 
-                    <button
+                    <Button
                         onClick={fetchRates}
-                        disabled={isLoading}
-                        className="bg-primary text-white p-3 px-8 rounded-xl font-bold shadow-lg hover:bg-primary-dark transition-all disabled:opacity-50"
+                        isLoading={isLoading}
+                        className="bg-primary text-white p-3 px-8 rounded-xl font-bold shadow-lg hover:bg-primary-dark transition-all h-auto"
                     >
-                        {isLoading ? '集計中...' : '集計する'}
-                    </button>
+                        集計する
+                    </Button>
                 </div>
             </div>
 

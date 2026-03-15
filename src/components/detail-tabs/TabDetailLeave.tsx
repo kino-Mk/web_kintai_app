@@ -5,6 +5,7 @@ import { Employee, COLLECTIONS } from '../../types';
 import { toDate, formatDateStr, calculateRemainingPaidLeave } from '../../utils';
 import { useModal } from '../../contexts/ModalContext';
 import { Plus, Trash2, Calendar, AlertCircle } from 'lucide-react';
+import { Button } from '../ui/Button';
 
 interface Props {
     employee: Employee;
@@ -214,14 +215,15 @@ export const TabDetailLeave: React.FC<Props> = ({ employee }) => {
                             className="w-full p-2.5 rounded-xl bg-white border border-gray-200 focus:ring-2 focus:ring-primary text-sm"
                         />
                     </div>
-                    <button
+                    <Button
                         type="submit"
                         disabled={isAdding}
-                        className="bg-primary text-white p-2.5 px-6 rounded-xl font-bold shadow-lg shadow-primary/30 hover:bg-primary-dark transition-colors flex items-center gap-2 h-[42px] disabled:opacity-50"
+                        isLoading={isAdding}
+                        leftIcon={<Plus size={18} />}
+                        className="p-2.5 px-6 rounded-xl font-bold shadow-lg shadow-primary/30 h-[42px]"
                     >
-                        <Plus size={18} />
                         付与する
-                    </button>
+                    </Button>
                 </form>
             </div>
 
@@ -281,13 +283,15 @@ export const TabDetailLeave: React.FC<Props> = ({ employee }) => {
                                                 )}
                                             </td>
                                             <td className="px-4 py-4 text-right">
-                                                <button
+                                                <Button
                                                     onClick={() => handleDeleteGrant(grant.docId, grant.days, grantDateStr)}
-                                                    className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors h-8 w-8 p-0"
                                                     title="削除"
                                                 >
                                                     <Trash2 size={16} />
-                                                </button>
+                                                </Button>
                                             </td>
                                         </tr>
                                     );
@@ -337,13 +341,15 @@ export const TabDetailLeave: React.FC<Props> = ({ employee }) => {
                                             {app.reason}
                                         </td>
                                         <td className="px-4 py-4 text-right">
-                                            <button
+                                            <Button
                                                 onClick={() => handleUndoApproveLeaveStr(app.id, app.date)}
-                                                className="px-3 py-1.5 text-xs font-bold text-gray-500 bg-gray-100 hover:bg-red-50 hover:text-red-500 border border-gray-200 rounded-lg transition-colors"
+                                                variant="outline"
+                                                size="sm"
+                                                className="px-3 py-1.5 text-xs font-bold text-gray-500 bg-gray-100 hover:bg-red-50 hover:text-red-500 border border-gray-200 rounded-lg transition-colors h-auto shadow-none"
                                                 title="承認を取り消し、有給日数を戻す"
                                             >
                                                 承認取消
-                                            </button>
+                                            </Button>
                                         </td>
                                     </tr>
                                 ))}

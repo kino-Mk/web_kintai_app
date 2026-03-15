@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../firebase';
-import { doc, updateDoc, serverTimestamp, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, updateDoc, serverTimestamp, collection, query, where, getDocs, deleteDoc } from 'firebase/firestore';
 import { Employee, COLLECTIONS } from '../../types';
 import { useModal } from '../../contexts/ModalContext';
 import { hashPassword } from '../../utils';
 import { format, subMonths } from 'date-fns';
+import { Button } from '../ui/Button';
 
 interface Props {
     employee: Employee;
@@ -186,7 +187,6 @@ export const TabDetailBasic: React.FC<Props> = ({ employee }) => {
         if (!(await showConfirm(`${employee.name} さんを本当に削除しますか？\n（物理削除されます）`))) return;
 
         try {
-            const { deleteDoc } = await import('firebase/firestore');
             await deleteDoc(doc(db, COLLECTIONS.EMPLOYEES, employee.docId || employee.id));
             await showAlert('削除しました。');
             // employee is deleted, will cause unmount or redirect via parent snapshot
@@ -313,19 +313,21 @@ export const TabDetailBasic: React.FC<Props> = ({ employee }) => {
                 </div>
 
                 <div className="flex gap-4">
-                    <button
+                    <Button
                         onClick={handleDelete}
-                        className="flex-1 bg-red-50 text-red-500 font-bold p-4 rounded-xl hover:bg-red-100 transition-colors"
+                        variant="ghost"
+                        className="flex-1 bg-red-50 text-red-500 font-bold p-4 rounded-xl hover:bg-red-100 transition-colors h-auto shadow-none"
                     >
                         削除
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                         onClick={handleSave}
                         disabled={isSaving}
-                        className="flex-[2] bg-primary text-white font-bold p-4 rounded-xl shadow-lg hover:bg-primary-dark transition-colors disabled:opacity-50"
+                        isLoading={isSaving}
+                        className="flex-[2] font-bold p-4 rounded-xl shadow-lg h-auto"
                     >
-                        {isSaving ? '保存中...' : '設定を保存'}
-                    </button>
+                        設定を保存
+                    </Button>
                 </div>
             </div>
         </div>

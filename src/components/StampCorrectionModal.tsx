@@ -5,6 +5,7 @@ import { COLLECTIONS, AttendanceRecord } from '../types';
 import { toDate, formatTimeStr, getStartOfToday, sendGasNotification } from '../utils';
 import { X, CheckCircle2, AlertTriangle, Clock } from 'lucide-react';
 import { useModal } from '../contexts/ModalContext';
+import { Button } from './ui/Button';
 
 interface Props {
     isOpen: boolean;
@@ -122,9 +123,13 @@ export const StampCorrectionModal: React.FC<Props> = ({ isOpen, onClose }) => {
                             <p className="text-xs text-warning-dark font-bold uppercase tracking-wider">Stamp Correction Request</p>
                         </div>
                     </div>
-                    <button onClick={onClose} className="p-2 hover:bg-white/50 rounded-xl transition-colors text-gray-400">
+                    <Button
+                        onClick={onClose}
+                        variant="ghost"
+                        className="w-10 h-10 p-0 rounded-xl transition-colors text-gray-400"
+                    >
                         <X size={24} />
-                    </button>
+                    </Button>
                 </div>
 
                 <div className="p-8 space-y-6 overflow-y-auto max-h-[60vh] custom-scrollbar">
@@ -185,19 +190,21 @@ export const StampCorrectionModal: React.FC<Props> = ({ isOpen, onClose }) => {
                 </div>
 
                 <div className="p-8 bg-gray-50/50 flex gap-4 border-t border-gray-100">
-                    <button
+                    <Button
                         onClick={onClose}
-                        className="flex-1 py-4 px-6 rounded-2xl font-bold text-gray-400 hover:bg-gray-100 transition-colors active:scale-95"
+                        variant="ghost"
+                        className="flex-1 py-4 px-6 rounded-2xl font-bold text-gray-400 h-auto"
                     >
                         キャンセル
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                         onClick={handleSubmit}
                         disabled={loading || stamps.length === 0}
-                        className="flex-[2] py-4 px-6 rounded-2xl font-bold bg-primary text-white shadow-lg shadow-primary/20 hover:bg-primary-dark transition-all active:scale-95 disabled:opacity-50 disabled:active:scale-100"
+                        isLoading={loading}
+                        className="flex-[2] py-4 px-6 rounded-2xl font-bold bg-primary text-white shadow-lg shadow-primary/20 hover:bg-primary-dark transition-all h-auto"
                     >
-                        {loading ? '送信中...' : '修正申請を送信'}
-                    </button>
+                        修正申請を送信
+                    </Button>
                 </div>
             </div>
         </div>

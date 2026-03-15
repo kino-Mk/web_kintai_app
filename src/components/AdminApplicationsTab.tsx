@@ -1,20 +1,17 @@
 import React, { useState } from 'react';
-import { db } from '../firebase';
-import { collection, doc, updateDoc, serverTimestamp, addDoc } from 'firebase/firestore';
-import { Application, COLLECTIONS, ApplicationStatus } from '../types';
+import { Application, ApplicationStatus } from '../types';
 import { toDate, formatFullDateTime } from '../utils';
 import { Check, X, Clock, User, Filter } from 'lucide-react';
 import { useModal } from '../contexts/ModalContext';
-import { useAdminApplications } from '../hooks/useApplications';
-import { useQueryClient } from '@tanstack/react-query';
+import { useAdminApplications, useUpdateApplicationStatus } from '../hooks/useApplications';
 import { Button } from './ui/Button';
 
 export const AdminApplicationsTab: React.FC = () => {
     const [filter, setFilter] = useState<'pending' | 'all'>('pending');
     const { showAlert, showConfirm } = useModal();
-    const queryClient = useQueryClient();
 
     const { data: apps = [], isLoading: loading } = useAdminApplications(filter);
+    const updateStatusMutation = useUpdateApplicationStatus();
 
     const handleStatusChange = async (app: Application, newStatus: ApplicationStatus) => {
         const action = newStatus === 'approved' ? '承認' : '却下';
@@ -27,46 +24,10 @@ export const AdminApplicationsTab: React.FC = () => {
 
         if (!confirmed) return;
 
-        try {
-            // 打刻データの自動生成 (遅刻・早退・残業のみ、かつ承認時)
-            if (newStatus === 'approved') {
-                let attType: 'in' | 'out' | null = null;
-                let targetTimeStr: string | undefined;
-
-                if (app.type === '遅刻') {
-                    attType = 'in';
-                    targetTimeStr = app.startTime;
-                } else if (app.type === '早退' || app.type === '残業') {
-                    attType = 'out';
-                    targetTimeStr = app.endTime;
-                }
-
-                if (attType && targetTimeStr) {
-                    const [years, months, days] = app.date.split('-').map(Number);
-                    const [hours, minutes] = targetTimeStr.split(':').map(Number);
-                    const targetDate = new Date(years, months - 1, days, hours, minutes);
-
-                    await addDoc(collection(db, COLLECTIONS.ATTENDANCE), {
-                        empId: app.empId,
-                        empName: app.empName,
-                        type: attType,
-                        timestamp: targetDate, // Firebase SDK automatically converts Date to Timestamp
-                        remark: `${app.type}承認による自動登録`,
-                        createdAt: serverTimestamp()
-                    });
-                }
-            }
-
-            await updateDoc(doc(db, COLLECTIONS.APPLICATIONS, app.id!), {
-                status: newStatus,
-                updatedAt: serverTimestamp()
-            });
-
-            await queryClient.invalidateQueries({ queryKey: ['applications'] });
-            await showAlert(`申請を${action}しました。`);
-        } catch (error: any) {
-            await showAlert(`更新に失敗しました: ${error.message}`);
-        }
+        updateStatusMutation.mutate({ application: app, newStatus }, {
+            onSuccess: () => showAlert(`申請を${action}しました。`),
+            onError: (error: any) => showAlert(`更新に失敗しました: ${error.message}`)
+        });
     };
 
     return (
@@ -74,18 +35,22 @@ export const AdminApplicationsTab: React.FC = () => {
             <div className="flex justify-between items-center bg-gray-50/50 p-4 rounded-2xl border border-gray-100">
                 <div className="flex items-center gap-2 text-sm text-gray-500 font-medium">
                     <Filter size={16} /> フィルター:
-                    <button
+                    <Button
                         onClick={() => setFilter('pending')}
-                        className={`px-3 py-1 rounded-lg transition-colors ${filter === 'pending' ? 'bg-primary text-white shadow-sm' : 'hover:bg-gray-100'}`}
+                        variant={filter === 'pending' ? 'primary' : 'ghost'}
+                        size="sm"
+                        className="rounded-lg h-8 py-0"
                     >
                         未処理のみ
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                         onClick={() => setFilter('all')}
-                        className={`px-3 py-1 rounded-lg transition-colors ${filter === 'all' ? 'bg-primary text-white shadow-sm' : 'hover:bg-gray-100'}`}
+                        variant={filter === 'all' ? 'primary' : 'ghost'}
+                        size="sm"
+                        className="rounded-lg h-8 py-0"
                     >
                         すべて
-                    </button>
+                    </Button>
                 </div>
                 <span className="text-xs text-gray-400 font-bold">{apps.length} 件表示中</span>
             </div>

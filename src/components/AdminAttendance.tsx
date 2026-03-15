@@ -4,6 +4,7 @@ import { AdminCorrectionsTab } from './AdminCorrectionsTab';
 import { AdminDailyTab } from './AdminDailyTab';
 import { AdminMonthlyTab } from './AdminMonthlyTab';
 import { ClipboardList, CheckSquare, Calendar, BarChart3 } from 'lucide-react';
+import { Button } from './ui/Button';
 
 export const AdminAttendance: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'applications' | 'corrections' | 'daily' | 'monthly'>('applications');
@@ -29,17 +30,18 @@ export const AdminAttendance: React.FC = () => {
                     const Icon = tab.icon;
                     const isActive = activeTab === tab.id;
                     return (
-                        <button
+                        <Button
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
-                            className={`flex items-center gap-2 px-6 py-4 text-sm font-bold border-b-2 transition-all whitespace-nowrap ${isActive
+                            variant="ghost"
+                            leftIcon={<Icon size={18} />}
+                            className={`px-6 py-4 text-sm font-bold border-b-2 rounded-none transition-all whitespace-nowrap h-auto shadow-none ${isActive
                                 ? 'border-primary text-primary bg-primary-light/30'
                                 : 'border-transparent text-gray-400 hover:text-gray-600 hover:bg-gray-50'
                                 }`}
                         >
-                            <Icon size={18} />
                             {tab.label}
-                        </button>
+                        </Button>
                     );
                 })}
             </div>

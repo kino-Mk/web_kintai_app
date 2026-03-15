@@ -5,6 +5,7 @@ import { COLLECTIONS } from '../types';
 import { formatDateStr } from '../utils';
 import { Calendar as CalendarIcon, Plus, Trash2, Info, CalendarDays } from 'lucide-react';
 import { useModal } from '../contexts/ModalContext';
+import { Button } from './ui/Button';
 
 interface Holiday {
     id?: string;
@@ -159,12 +160,13 @@ export const AdminCalendar: React.FC = () => {
                                     className="w-full p-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary font-bold text-sm"
                                 />
                             </div>
-                            <button
+                            <Button
                                 type="submit"
-                                className="w-full py-4 bg-primary text-white rounded-2xl font-bold shadow-lg shadow-primary/20 hover:bg-primary-dark transition-all active:scale-95 flex items-center justify-center gap-2"
+                                className="w-full py-4 rounded-2xl font-bold shadow-lg shadow-primary/20 h-auto"
+                                leftIcon={<Plus size={20} />}
                             >
                                 登録する
-                            </button>
+                            </Button>
                         </form>
                     </div>
 
@@ -182,13 +184,15 @@ export const AdminCalendar: React.FC = () => {
                                     className="w-full p-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary font-bold text-sm"
                                 />
                             </div>
-                            <button
+                            <Button
                                 onClick={handleAutoSet}
                                 disabled={loading}
-                                className="w-full py-4 bg-gray-800 text-white rounded-2xl font-bold shadow-lg hover:bg-black transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50"
+                                isLoading={loading}
+                                variant="outline"
+                                className="w-full py-4 bg-gray-800 text-white border-none rounded-2xl font-bold shadow-lg hover:bg-black transition-all h-auto"
                             >
                                 自動登録を実行
-                            </button>
+                            </Button>
                             <p className="text-[10px] text-gray-400 mt-2 text-center">
                                 日本の祝日APIと連携し、指定月の土日・祝日を一括登録します。（登録済みの日はスキップされます）
                             </p>
@@ -236,12 +240,14 @@ export const AdminCalendar: React.FC = () => {
                                                 </td>
                                                 <td className="px-8 py-4">
                                                     <div className="flex justify-center">
-                                                        <button
+                                                        <Button
                                                             onClick={() => handleDelete(h)}
-                                                            className="p-2 text-gray-300 hover:text-danger hover:bg-danger-bg rounded-xl transition-all active:scale-95"
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className="p-2 text-gray-300 hover:text-danger hover:bg-danger-bg rounded-xl transition-all h-10 w-10 p-0"
                                                         >
                                                             <Trash2 size={18} />
-                                                        </button>
+                                                        </Button>
                                                     </div>
                                                 </td>
                                             </tr>

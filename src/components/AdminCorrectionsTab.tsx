@@ -1,53 +1,38 @@
 import React, { useState } from 'react';
-import { db } from '../firebase';
-import { doc, updateDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
-import { StampCorrection, COLLECTIONS, ApplicationStatus } from '../types';
+import { StampCorrection, ApplicationStatus } from '../types';
 import { toDate, formatFullDateTime } from '../utils';
 import { Check, X, Clock, Filter, AlertTriangle } from 'lucide-react';
 import { useModal } from '../contexts/ModalContext';
-import { useQueryClient } from '@tanstack/react-query';
 import { Button } from './ui/Button';
-import { useAdminCorrections } from '../hooks/useCorrections';
+import { useAdminCorrections, useUpdateCorrectionStatus } from '../hooks/useCorrections';
 
 export const AdminCorrectionsTab: React.FC = () => {
     const [filter, setFilter] = useState<'pending' | 'all'>('pending');
     const { showAlert, showConfirm } = useModal();
-    const queryClient = useQueryClient();
 
     const { data: corrections = [], isLoading: loading } = useAdminCorrections(filter);
+    const updateMutation = useUpdateCorrectionStatus();
 
     const handleStatusChange = async (corr: StampCorrection, newStatus: ApplicationStatus) => {
         const action = newStatus === 'approved' ? '承認' : '却下';
 
         let confirmMsg = `${corr.empName} さんの修正依頼を${action}しますか？`;
         if (newStatus === 'approved') {
-            confirmMsg += '\n承認すると該当の打刻データが自動的に削除されます。';
+            confirmMsg += '\n承認すると該当の打刻データが最新の状態に更新されます。';
         }
 
         if (!(await showConfirm(confirmMsg))) return;
 
-        try {
-            if (newStatus === 'approved' && corr.attendanceDocId) {
-                await deleteDoc(doc(db, COLLECTIONS.ATTENDANCE, corr.attendanceDocId));
-                // invalidate attendance queries as well
-                await queryClient.invalidateQueries({ queryKey: ['attendance'] });
-            }
-
-            await updateDoc(doc(db, COLLECTIONS.STAMP_CORRECTIONS, corr.id!), {
-                status: newStatus,
-                updatedAt: serverTimestamp()
-            });
-
-            await queryClient.invalidateQueries({ queryKey: ['corrections'] });
-
-            if (newStatus === 'approved') {
-                await showAlert('承認しました。該当の打刻データを削除しました。');
-            } else {
-                await showAlert(`修正依頼を${action}しました。`);
-            }
-        } catch (error: any) {
-            await showAlert(`更新に失敗しました: ${error.message}`);
-        }
+        updateMutation.mutate({ correction: corr, newStatus }, {
+            onSuccess: () => {
+                if (newStatus === 'approved') {
+                    showAlert('承認し、打刻データを更新しました。');
+                } else {
+                    showAlert(`修正依頼を${action}しました。`);
+                }
+            },
+            onError: (error: any) => showAlert(`更新に失敗しました: ${error.message}`)
+        });
     };
 
     return (
@@ -55,18 +40,22 @@ export const AdminCorrectionsTab: React.FC = () => {
             <div className="flex justify-between items-center bg-gray-50/50 p-4 rounded-2xl border border-gray-100">
                 <div className="flex items-center gap-2 text-sm text-gray-500 font-medium">
                     <Filter size={16} /> フィルター:
-                    <button
+                    <Button
                         onClick={() => setFilter('pending')}
-                        className={`px-3 py-1 rounded-lg transition-colors ${filter === 'pending' ? 'bg-primary text-white shadow-sm' : 'hover:bg-gray-100'}`}
+                        variant={filter === 'pending' ? 'primary' : 'ghost'}
+                        size="sm"
+                        className="rounded-lg h-8 py-0"
                     >
                         未処理のみ
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                         onClick={() => setFilter('all')}
-                        className={`px-3 py-1 rounded-lg transition-colors ${filter === 'all' ? 'bg-primary text-white shadow-sm' : 'hover:bg-gray-100'}`}
+                        variant={filter === 'all' ? 'primary' : 'ghost'}
+                        size="sm"
+                        className="rounded-lg h-8 py-0"
                     >
                         すべて
-                    </button>
+                    </Button>
                 </div>
                 <span className="text-xs text-gray-400 font-bold">{corrections.length} 件表示中</span>
             </div>

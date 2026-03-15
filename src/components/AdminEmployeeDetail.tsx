@@ -3,6 +3,7 @@ import { db } from '../firebase';
 import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { Employee, COLLECTIONS } from '../types';
 import { ArrowLeft, User, Clock, Calendar, Mail } from 'lucide-react';
+import { Button } from './ui/Button';
 
 import { TabDetailBasic } from './detail-tabs/TabDetailBasic';
 import { TabDetailAttendance } from './detail-tabs/TabDetailAttendance';
@@ -46,9 +47,13 @@ export const AdminEmployeeDetail: React.FC<Props> = ({ employeeId, onBack }) => 
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                    <button onClick={onBack} className="p-2 text-gray-400 hover:text-gray-600 transition-colors">
+                    <Button
+                        onClick={onBack}
+                        variant="ghost"
+                        className="text-gray-400 hover:text-gray-600 rounded-full w-12 h-12 p-0"
+                    >
                         <ArrowLeft size={24} />
-                    </button>
+                    </Button>
                     <div>
                         <h2 className="text-2xl font-bold text-gray-800">
                             {currentEmployee.name} <span className="text-gray-400 text-lg">({currentEmployee.id})</span>
@@ -72,35 +77,39 @@ export const AdminEmployeeDetail: React.FC<Props> = ({ employeeId, onBack }) => 
                 </div>
             </div>
 
-            <div className="flex overflow-x-auto border-b border-gray-200 hide-scrollbar gap-2">
-                <button
+            <div className="flex overflow-x-auto border-b border-gray-200 hide-scrollbar gap-2 px-1">
+                <Button
                     onClick={() => setActiveTab('basic')}
-                    className={`flex items-center gap-2 px-6 py-4 font-bold whitespace-nowrap transition-colors border-b-2 ${activeTab === 'basic' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+                    variant="ghost"
+                    leftIcon={<User size={18} />}
+                    className={`px-6 py-4 font-bold whitespace-nowrap rounded-none border-b-2 h-auto shadow-none ${activeTab === 'basic' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
                 >
-                    <User size={18} />
                     基本情報
-                </button>
-                <button
+                </Button>
+                <Button
                     onClick={() => setActiveTab('attendance')}
-                    className={`flex items-center gap-2 px-6 py-4 font-bold whitespace-nowrap transition-colors border-b-2 ${activeTab === 'attendance' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+                    variant="ghost"
+                    leftIcon={<Clock size={18} />}
+                    className={`px-6 py-4 font-bold whitespace-nowrap rounded-none border-b-2 h-auto shadow-none ${activeTab === 'attendance' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
                 >
-                    <Clock size={18} />
                     勤務記録
-                </button>
-                <button
+                </Button>
+                <Button
                     onClick={() => setActiveTab('leave')}
-                    className={`flex items-center gap-2 px-6 py-4 font-bold whitespace-nowrap transition-colors border-b-2 ${activeTab === 'leave' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+                    variant="ghost"
+                    leftIcon={<Calendar size={18} />}
+                    className={`px-6 py-4 font-bold whitespace-nowrap rounded-none border-b-2 h-auto shadow-none ${activeTab === 'leave' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
                 >
-                    <Calendar size={18} />
                     有給管理
-                </button>
-                <button
+                </Button>
+                <Button
                     onClick={() => setActiveTab('applications')}
-                    className={`flex items-center gap-2 px-6 py-4 font-bold whitespace-nowrap transition-colors border-b-2 ${activeTab === 'applications' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+                    variant="ghost"
+                    leftIcon={<Mail size={18} />}
+                    className={`px-6 py-4 font-bold whitespace-nowrap rounded-none border-b-2 h-auto shadow-none ${activeTab === 'applications' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
                 >
-                    <Mail size={18} />
                     申請履歴
-                </button>
+                </Button>
             </div>
 
             <div className="bg-transparent">

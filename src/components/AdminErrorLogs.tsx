@@ -5,6 +5,7 @@ import { ErrorLog, COLLECTIONS } from '../types';
 import { toDate, formatFullDateTime } from '../utils';
 import { AlertCircle, CheckCircle2, Terminal, ChevronDown, ChevronUp, Clock, Globe, User, Trash2 } from 'lucide-react';
 import { useModal } from '../contexts/ModalContext';
+import { Button } from './ui/Button';
 
 export const AdminErrorLogs: React.FC = () => {
     const [logs, setLogs] = useState<ErrorLog[]>([]);
@@ -95,22 +96,26 @@ export const AdminErrorLogs: React.FC = () => {
                                     </div>
                                 </div>
 
-                                <div className="flex items-center gap-3 self-end md:self-center">
+                                <div className="flex items-center gap-2 self-end md:self-center">
                                     {!log.resolved && (
-                                        <button
+                                        <Button
                                             onClick={(e) => { e.stopPropagation(); handleResolve(log); }}
-                                            className="px-4 py-2 bg-success-bg text-success text-xs font-bold rounded-xl hover:bg-success hover:text-white transition-all shadow-sm active:scale-95 whitespace-nowrap"
+                                            variant="ghost"
+                                            size="sm"
+                                            className="px-4 py-2 bg-success-bg text-success text-xs font-bold rounded-xl hover:bg-success hover:text-white transition-all shadow-sm active:scale-95 whitespace-nowrap h-auto"
                                         >
                                             解決済みにする
-                                        </button>
+                                        </Button>
                                     )}
-                                    <button
-                                        onClick={(e) => { e.stopPropagation(); handleDeleteLog(log.id!); }}
-                                        className="p-2 text-gray-400 hover:text-danger hover:bg-danger-bg rounded-xl transition-all shadow-sm flex items-center justify-center"
-                                        title="エラーログを削除"
-                                    >
+                                        <Button
+                                            onClick={(e) => { e.stopPropagation(); handleDeleteLog(log.id!); }}
+                                            variant="ghost"
+                                            size="sm"
+                                            className="text-gray-400 hover:text-danger hover:bg-danger-bg rounded-xl transition-all shadow-sm flex items-center justify-center h-10 w-10 p-0"
+                                            title="エラーログを削除"
+                                        >
                                         <Trash2 size={18} />
-                                    </button>
+                                    </Button>
                                     <div className="text-gray-300">
                                         {expandedLogId === log.id ? <ChevronUp size={24} /> : <ChevronDown size={24} />}
                                     </div>

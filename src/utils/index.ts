@@ -1,7 +1,7 @@
 import { db } from '../firebase';
-import { collection, addDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, getDoc, query, getDocs, orderBy } from 'firebase/firestore';
 import { format } from 'date-fns';
-import { COLLECTIONS } from '../types';
+import { COLLECTIONS, AttendanceRecord } from '../types';
 
 /**
  * ランダムなソルトを生成する（16バイトの16進文字列）
@@ -106,6 +106,9 @@ export function toDate(timestamp: any): Date {
     if (!timestamp) return new Date();
     if (timestamp instanceof Date) return timestamp;
     if (typeof timestamp.toDate === 'function') return timestamp.toDate();
+    if (timestamp.seconds !== undefined) {
+        return new Date(timestamp.seconds * 1000 + (timestamp.nanoseconds || 0) / 1000000);
+    }
     return new Date(timestamp);
 }
 
@@ -242,5 +245,31 @@ export function downloadCSV(content: string, filename: string) {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+    }
+}
+
+/**
+ * 全件打刻データのCSVエクスポート（共通）
+ */
+export async function exportRawAttendanceCSV() {
+    try {
+        const snapshot = await getDocs(query(collection(db, COLLECTIONS.ATTENDANCE), orderBy('timestamp', 'desc')));
+        let csvContent = "従業員ID,従業員名,打刻種別,打刻日時,備考\n";
+
+        snapshot.forEach(doc => {
+            const data = doc.data() as AttendanceRecord;
+            if (!data.timestamp) return;
+            const dateObj = toDate(data.timestamp);
+            const formattedTime = formatFullDateTime(dateObj);
+            const typeStr = data.type === 'in' ? "1" : "2"; // 1:出勤, 2:退勤
+            const remark = (data.remark || "").replace(/[\n\r,]/g, ' '); // カンマ等を除去
+            csvContent += `${data.empId},${data.empName},${typeStr},${formattedTime},${remark}\n`;
+        });
+
+        downloadCSV(csvContent, `attendance_raw_${format(new Date(), 'yyyyMMdd')}.csv`);
+        return true;
+    } catch (error) {
+        console.error('Raw Export Error:', error);
+        throw error;
     }
 }

@@ -6,6 +6,7 @@ import { StampCorrectionModal } from './StampCorrectionModal';
 import { useEmployees } from '../hooks/useEmployees';
 import { Skeleton } from './ui/Skeleton';
 import { Input } from './ui/Input';
+import { Button } from './ui/Button';
 
 interface Props {
     onSelect: (employee: Employee) => void;
@@ -50,18 +51,20 @@ export const EmployeeSelection: React.FC<Props> = ({ onSelect, attendanceStates 
                     />
                 </div>
                 <div className="flex bg-gray-100/50 p-1 rounded-2xl">
-                    <button
+                    <Button
                         onClick={() => setActiveTab('all')}
-                        className={`px-6 py-3 rounded-xl font-bold transition-all ${activeTab === 'all' ? 'bg-white shadow-sm text-primary' : 'text-gray-400 hover:text-gray-600'}`}
+                        variant={activeTab === 'all' ? 'primary' : 'ghost'}
+                        className={`px-6 py-3 rounded-xl font-bold h-auto shadow-none ${activeTab === 'all' ? 'bg-white text-primary' : 'text-gray-400 hover:text-gray-600'}`}
                     >
                         全員
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                         onClick={() => setActiveTab('in')}
-                        className={`px-6 py-3 rounded-xl font-bold transition-all ${activeTab === 'in' ? 'bg-white shadow-sm text-success' : 'text-gray-400 hover:text-gray-600'}`}
+                        variant={activeTab === 'in' ? 'primary' : 'ghost'}
+                        className={`px-6 py-3 rounded-xl font-bold h-auto shadow-none ${activeTab === 'in' ? 'bg-white text-success hover:text-success' : 'text-gray-400 hover:text-gray-600'}`}
                     >
                         出勤中
-                    </button>
+                    </Button>
                 </div>
             </div>
 
@@ -90,13 +93,14 @@ export const EmployeeSelection: React.FC<Props> = ({ onSelect, attendanceStates 
 
             <div className="pt-6 border-t border-gray-50">
                 {isMobile ? (
-                    <button
+                    <Button
                         onClick={() => setIsModalOpen(true)}
-                        className="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-2xl border-2 border-dashed border-warning text-warning font-bold hover:bg-warning-bg transition-all active:scale-95"
+                        variant="outline"
+                        leftIcon={<AlertCircle size={20} />}
+                        className="w-full py-4 rounded-2xl border-2 border-dashed border-warning text-warning font-bold hover:bg-warning-bg transition-all h-auto"
                     >
-                        <AlertCircle size={20} />
                         打刻内容の修正を申請する
-                    </button>
+                    </Button>
                 ) : (
                     <div className="text-center p-4 bg-gray-50 rounded-2xl border border-gray-200">
                         <p className="text-sm text-gray-500 font-bold flex items-center justify-center gap-2">
