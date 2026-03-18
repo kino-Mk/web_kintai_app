@@ -238,6 +238,8 @@ export const PasswordModal: React.FC<Props> = ({ employee, onSuccess, onClose })
 
                             <div className="space-y-2">
                                 <Input
+                                    id="password"
+                                    name="password"
                                     type="password"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
@@ -283,6 +285,8 @@ export const PasswordModal: React.FC<Props> = ({ employee, onSuccess, onClose })
                                 <div>
                                     <label className="text-xs font-bold text-gray-500 mb-1 block">メールアドレス</label>
                                     <Input
+                                        id="email"
+                                        name="email"
                                         type="email"
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}

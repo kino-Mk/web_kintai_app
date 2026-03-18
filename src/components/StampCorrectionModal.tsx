@@ -181,6 +181,8 @@ export const StampCorrectionModal: React.FC<Props> = ({ isOpen, onClose }) => {
                             修正の理由
                         </label>
                         <textarea
+                            id="correction-reason"
+                            name="correction-reason"
                             value={reason}
                             onChange={(e) => setReason(e.target.value)}
                             placeholder="例: 退勤時の打刻を忘れました。 / 二重に打刻してしまいました。"

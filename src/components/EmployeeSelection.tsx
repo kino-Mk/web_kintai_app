@@ -42,6 +42,8 @@ export const EmployeeSelection: React.FC<Props> = ({ onSelect, attendanceStates 
             <div className="flex flex-col sm:flex-row gap-4">
                 <div className="flex-1">
                     <Input
+                        id="employee-search"
+                        name="employee-search"
                         type="text"
                         placeholder="名前またはIDで検索..."
                         value={filter}

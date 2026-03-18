@@ -182,6 +182,8 @@ export const ApplicationScreen: React.FC<Props> = ({ employee, onBack, onComplet
                             <Calendar size={14} className="text-primary" /> 申請種別
                         </label>
                         <select
+                            id="app-type"
+                            name="app-type"
                             value={type}
                             onChange={(e) => setType(e.target.value)}
                             className="w-full p-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-primary font-bold text-gray-700"
@@ -201,6 +203,8 @@ export const ApplicationScreen: React.FC<Props> = ({ employee, onBack, onComplet
                             <Calendar size={14} className="text-primary" /> 対象日
                         </label>
                         <input
+                            id="app-date"
+                            name="app-date"
                             type="date"
                             value={date}
                             onChange={(e) => setDate(e.target.value)}
@@ -215,7 +219,9 @@ export const ApplicationScreen: React.FC<Props> = ({ employee, onBack, onComplet
                             <label className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2 px-1">
                                 <Clock size={14} className="text-primary" /> 開始時刻
                             </label>
-                            <input
+                             <input
+                                id="app-start-time"
+                                name="app-start-time"
                                 type="time"
                                 value={startTime}
                                 onChange={(e) => setStartTime(e.target.value)}
@@ -226,7 +232,9 @@ export const ApplicationScreen: React.FC<Props> = ({ employee, onBack, onComplet
                             <label className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2 px-1">
                                 <Clock size={14} className="text-primary" /> 終了時刻
                             </label>
-                            <input
+                             <input
+                                id="app-end-time"
+                                name="app-end-time"
                                 type="time"
                                 value={endTime}
                                 onChange={(e) => setEndTime(e.target.value)}
@@ -241,6 +249,8 @@ export const ApplicationScreen: React.FC<Props> = ({ employee, onBack, onComplet
                         <MessageSquare size={14} className="text-primary" /> 理由・詳細
                     </label>
                     <textarea
+                        id="app-reason"
+                        name="app-reason"
                         value={reason}
                         onChange={(e) => setReason(e.target.value)}
                         placeholder="理由を入力してください（任意）"

@@ -64,6 +64,8 @@ export const AdminEmployeeDetail: React.FC<Props> = ({ employeeId, onBack }) => 
                 <div className="flex items-center gap-3">
                     <label className="text-sm font-bold text-gray-500">従業員切替:</label>
                     <select
+                        id="employee-switcher"
+                        name="employee-switcher"
                         value={currentEmpId}
                         onChange={(e) => setCurrentEmpId(e.target.value)}
                         className="p-2 rounded-lg bg-white border border-gray-200 focus:ring-2 focus:ring-primary focus:outline-none"

@@ -121,6 +121,8 @@ export const AdminSettings: React.FC = () => {
                                 <Mail size={14} className="text-primary" /> 管理者メールアドレス
                             </label>
                             <Input
+                                id="admin-email"
+                                name="admin-email"
                                 type="email"
                                 value={settings.adminEmail}
                                 onChange={(e) => setSettings({ ...settings, adminEmail: e.target.value })}
@@ -135,6 +137,8 @@ export const AdminSettings: React.FC = () => {
                                 <Globe size={14} className="text-primary" /> GAS WebApp URL
                             </label>
                             <Input
+                                id="gas-url"
+                                name="gas-url"
                                 type="url"
                                 value={settings.gasWebAppUrl}
                                 onChange={(e) => setSettings({ ...settings, gasWebAppUrl: e.target.value })}
@@ -168,6 +172,8 @@ export const AdminSettings: React.FC = () => {
                         <div className="space-y-2">
                             <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">現在のパスワード</label>
                             <Input
+                                id="current-password"
+                                name="current-password"
                                 type="password"
                                 value={currentPw}
                                 onChange={(e) => setCurrentPw(e.target.value)}
@@ -178,6 +184,8 @@ export const AdminSettings: React.FC = () => {
                         <div className="space-y-2">
                             <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">新しいパスワード</label>
                             <Input
+                                id="new-password"
+                                name="new-password"
                                 type="password"
                                 value={newPw}
                                 onChange={(e) => setNewPw(e.target.value)}
@@ -188,6 +196,8 @@ export const AdminSettings: React.FC = () => {
                         <div className="space-y-2">
                             <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">確認</label>
                             <Input
+                                id="confirm-password"
+                                name="confirm-password"
                                 type="password"
                                 value={confirmPw}
                                 onChange={(e) => setConfirmPw(e.target.value)}

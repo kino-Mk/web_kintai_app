@@ -118,6 +118,8 @@ export const TabDetailAttendance: React.FC<Props> = ({ employee }) => {
                     <div className="space-y-1">
                         <label className="text-xs font-bold text-gray-500">日付</label>
                         <input
+                            id="add-date"
+                            name="add-date"
                             type="date"
                             value={addDate}
                             onChange={(e) => setAddDate(e.target.value)}
@@ -128,6 +130,8 @@ export const TabDetailAttendance: React.FC<Props> = ({ employee }) => {
                     <div className="space-y-1">
                         <label className="text-xs font-bold text-gray-500">時間</label>
                         <input
+                            id="add-time"
+                            name="add-time"
                             type="time"
                             value={addTime}
                             onChange={(e) => setAddTime(e.target.value)}
@@ -138,6 +142,8 @@ export const TabDetailAttendance: React.FC<Props> = ({ employee }) => {
                     <div className="space-y-1">
                         <label className="text-xs font-bold text-gray-500">種別</label>
                         <select
+                            id="add-type"
+                            name="add-type"
                             value={addType}
                             onChange={(e) => setAddType(e.target.value as AttendanceType)}
                             className="w-full p-2.5 rounded-xl bg-white border border-gray-200 focus:ring-2 focus:ring-primary text-sm font-bold"
@@ -149,6 +155,8 @@ export const TabDetailAttendance: React.FC<Props> = ({ employee }) => {
                     <div className="space-y-1 flex-1 min-w-[200px]">
                         <label className="text-xs font-bold text-gray-500">備考 (任意)</label>
                         <input
+                            id="add-remark"
+                            name="add-remark"
                             type="text"
                             value={addRemark}
                             onChange={(e) => setAddRemark(e.target.value)}
@@ -176,6 +184,8 @@ export const TabDetailAttendance: React.FC<Props> = ({ employee }) => {
                     <div className="flex items-center gap-3">
                         <label className="text-sm font-bold text-gray-500">表示月 (21日〜20日):</label>
                         <input
+                            id="month-selector"
+                            name="month-selector"
                             type="month"
                             value={monthStr}
                             onChange={(e) => setMonthStr(e.target.value)}

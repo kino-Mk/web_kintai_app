@@ -202,7 +202,9 @@ export const AttendanceScreen: React.FC<Props> = ({ employee: propEmployee, onBa
                         </div>
 
                         <div className="relative">
-                            <textarea
+                             <textarea
+                                id="stamp-remark"
+                                name="stamp-remark"
                                 value={remark}
                                 onChange={(e) => setRemark(e.target.value)}
                                 placeholder="備考欄（任意：外出、遅刻理由など）"

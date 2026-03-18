@@ -170,6 +170,8 @@ export const ResetPasswordScreen: React.FC<Props> = ({ token, onHome }) => {
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                     <Input
+                        id="new-password"
+                        name="new-password"
                         type="password"
                         placeholder="新しいパスワード"
                         value={newPassword}
@@ -180,6 +182,8 @@ export const ResetPasswordScreen: React.FC<Props> = ({ token, onHome }) => {
                 </div>
                 <div>
                     <Input
+                        id="confirm-password"
+                        name="confirm-password"
                         type="password"
                         placeholder="確認のためもう一度入力"
                         value={confirmPassword}

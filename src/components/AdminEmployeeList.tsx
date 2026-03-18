@@ -159,6 +159,8 @@ export const AdminEmployeeList = () => {
                 <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-sm border border-primary-light dark:border-primary/30 animate-in fade-in slide-in-from-top-4 duration-300">
                     <form onSubmit={handleAddEmployee} className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <Input
+                            id="new-employee-id"
+                            name="new-employee-id"
                             type="text"
                             placeholder="従業員ID (例: 1001)"
                             value={newEmpId}
@@ -166,6 +168,8 @@ export const AdminEmployeeList = () => {
                             className="bg-gray-50 dark:bg-slate-900 border-none"
                         />
                         <Input
+                            id="new-employee-name"
+                            name="new-employee-name"
                             type="text"
                             placeholder="名前 (例: 山田 太郎)"
                             value={newEmpName}
@@ -183,6 +187,8 @@ export const AdminEmployeeList = () => {
                 <div className="p-4 border-b border-gray-50 dark:border-slate-700 flex items-center gap-3 bg-gray-50/50 dark:bg-slate-900/50">
                     <Search size={18} className="text-gray-400" />
                     <input
+                        id="employee-list-search"
+                        name="employee-list-search"
                         type="text"
                         placeholder="名前やIDで検索..."
                         value={filter}

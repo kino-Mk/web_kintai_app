@@ -153,6 +153,8 @@ export const AdminLoginScreen: React.FC<Props> = ({ onSuccess }) => {
                                     <Lock size={14} className="text-primary" /> 新しい管理者パスワード
                                 </label>
                                 <Input
+                                    id="setup-password"
+                                    name="setup-password"
                                     type="password"
                                     value={newPassword}
                                     onChange={(e) => setNewPassword(e.target.value)}
@@ -167,6 +169,8 @@ export const AdminLoginScreen: React.FC<Props> = ({ onSuccess }) => {
                                     <Lock size={14} className="text-primary" /> 確認
                                 </label>
                                 <Input
+                                    id="setup-confirm-password"
+                                    name="setup-confirm-password"
                                     type="password"
                                     value={confirmPassword}
                                     onChange={(e) => setConfirmPassword(e.target.value)}
@@ -191,6 +195,8 @@ export const AdminLoginScreen: React.FC<Props> = ({ onSuccess }) => {
                         <form onSubmit={handleLogin} className="space-y-6">
                             <div className="space-y-2">
                                 <Input
+                                    id="admin-password"
+                                    name="admin-password"
                                     type="password"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
