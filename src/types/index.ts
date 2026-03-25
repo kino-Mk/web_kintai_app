@@ -77,3 +77,13 @@ export interface ErrorLog {
     resolvedAt?: any;
     consoleLogs?: string[];
 }
+
+export interface LeaveGrant {
+    id?: string;
+    empId: string;
+    empName: string;
+    days: number;
+    grantDate: string;
+    expiryDate: string;
+    createdAt: any;
+}

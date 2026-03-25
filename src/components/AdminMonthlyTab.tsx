@@ -2,34 +2,23 @@ import React, { useState } from 'react';
 import { toDate, getMonthCycleRange, calculateRemainingPaidLeave, formatDateStr, exportRawAttendanceCSV, downloadCSV, formatCsvTime, getCurrentCycleMonthStr } from '../utils';
 import { User, ChevronRight, Download } from 'lucide-react';
 import { useModal } from '../contexts/ModalContext';
+import { useAdminApplications } from '../hooks/useApplications';
+import { useLeaveGrants } from '../hooks/useLeaveGrants';
 import { useEmployees } from '../hooks/useEmployees';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from './ui/Button';
 import { db } from '../firebase';
 import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
-import { AttendanceRecord, COLLECTIONS, Application } from '../types';
+import { AttendanceRecord, COLLECTIONS } from '../types';
 
 export const AdminMonthlyTab: React.FC = () => {
     const [selectedMonth, setSelectedMonth] = useState(getCurrentCycleMonthStr());
     const { showAlert } = useModal();
 
     const { data: employees = [], isLoading: loadEmp } = useEmployees();
-
-    const { data: leaveGrants = [], isLoading: loadGrants } = useQuery({
-        queryKey: ['leaveGrants'],
-        queryFn: async () => {
-            const snap = await getDocs(query(collection(db, COLLECTIONS.LEAVE_GRANTS)));
-            return snap.docs.map(doc => doc.data());
-        }
-    });
-
-    const { data: allApprovedApps = [], isLoading: loadApps } = useQuery({
-        queryKey: ['applications', 'approved'],
-        queryFn: async () => {
-            const snap = await getDocs(query(collection(db, COLLECTIONS.APPLICATIONS), where('status', '==', 'approved')));
-            return snap.docs.map(doc => doc.data() as Application);
-        }
-    });
+    const { data: leaveGrants = [], isLoading: loadGrants } = useLeaveGrants();
+    const { data: allApps = [], isLoading: loadApps } = useAdminApplications('all');
+    const allApprovedApps = allApps.filter(a => a.status === 'approved');
 
     const { data: records = [], isLoading: loadRecords } = useQuery({
         queryKey: ['attendance', 'cycle', selectedMonth],

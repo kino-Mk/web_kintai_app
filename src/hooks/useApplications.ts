@@ -1,7 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { collection, getDocs, query, where, orderBy, updateDoc, doc, serverTimestamp, addDoc } from 'firebase/firestore';
+import { collection, getDocs, query, where, orderBy, updateDoc, doc, serverTimestamp, addDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import { COLLECTIONS, Application, ApplicationStatus } from '../types';
+import { useEffect } from 'react';
 
 async function fetchApplicationsByEmployee(empId: string): Promise<Application[]> {
     const q = query(
@@ -17,10 +18,30 @@ async function fetchApplicationsByEmployee(empId: string): Promise<Application[]
 }
 
 export function useApplicationsByEmployee(empId: string | undefined) {
+    const queryClient = useQueryClient();
+
+    useEffect(() => {
+        if (!empId) return;
+        const q = query(
+            collection(db, COLLECTIONS.APPLICATIONS),
+            where('empId', '==', empId),
+            orderBy('createdAt', 'desc')
+        );
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const apps = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            } as Application));
+            queryClient.setQueryData(['applications', empId], apps);
+        });
+        return () => unsubscribe();
+    }, [empId, queryClient]);
+
     return useQuery({
         queryKey: ['applications', empId],
         queryFn: () => fetchApplicationsByEmployee(empId!),
         enabled: !!empId,
+        staleTime: Infinity,
     });
 }
 
@@ -38,13 +59,50 @@ async function fetchPendingApplications(): Promise<Application[]> {
 }
 
 export function usePendingApplications() {
+    const queryClient = useQueryClient();
+
+    useEffect(() => {
+        const q = query(
+            collection(db, COLLECTIONS.APPLICATIONS),
+            where('status', '==', 'pending'),
+            orderBy('createdAt', 'desc')
+        );
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const apps = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            } as Application));
+            queryClient.setQueryData(['applications', 'pending'], apps);
+        });
+        return () => unsubscribe();
+    }, [queryClient]);
+
     return useQuery({
         queryKey: ['applications', 'pending'],
         queryFn: fetchPendingApplications,
+        staleTime: Infinity,
     });
 }
 
 export function useAdminApplications(filter: 'all' | 'pending') {
+    const queryClient = useQueryClient();
+
+    useEffect(() => {
+        let q = query(collection(db, COLLECTIONS.APPLICATIONS), orderBy('createdAt', 'desc'));
+        if (filter === 'pending') {
+            q = query(collection(db, COLLECTIONS.APPLICATIONS), where('status', '==', 'pending'), orderBy('createdAt', 'desc'));
+        }
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const apps = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            } as Application));
+            queryClient.setQueryData(['applications', 'admin', filter], apps);
+            // 'all' の更新時、'pending' も関連があれば更新されるべきだが、ここではシンプルにするために個別にリッスン
+        });
+        return () => unsubscribe();
+    }, [filter, queryClient]);
+
     return useQuery({
         queryKey: ['applications', 'admin', filter],
         queryFn: async () => {
@@ -57,7 +115,8 @@ export function useAdminApplications(filter: 'all' | 'pending') {
                 id: doc.id,
                 ...doc.data()
             } as Application));
-        }
+        },
+        staleTime: Infinity,
     });
 }
 

@@ -1,10 +1,28 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { collection, getDocs, query, where, orderBy, updateDoc, doc, serverTimestamp, getDoc } from 'firebase/firestore';
+import { collection, getDocs, query, where, orderBy, updateDoc, doc, serverTimestamp, getDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import { COLLECTIONS, StampCorrection, ApplicationStatus } from '../types';
 import { toDate } from '../utils';
+import { useEffect } from 'react';
 
 export function useAdminCorrections(filter: 'all' | 'pending') {
+    const queryClient = useQueryClient();
+
+    useEffect(() => {
+        let q = query(collection(db, COLLECTIONS.STAMP_CORRECTIONS), orderBy('createdAt', 'desc'));
+        if (filter === 'pending') {
+            q = query(collection(db, COLLECTIONS.STAMP_CORRECTIONS), where('status', '==', 'pending'), orderBy('createdAt', 'desc'));
+        }
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const corrections = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            } as StampCorrection));
+            queryClient.setQueryData(['corrections', 'admin', filter], corrections);
+        });
+        return () => unsubscribe();
+    }, [filter, queryClient]);
+
     return useQuery({
         queryKey: ['corrections', 'admin', filter],
         queryFn: async () => {
@@ -17,11 +35,31 @@ export function useAdminCorrections(filter: 'all' | 'pending') {
                 id: doc.id,
                 ...doc.data()
             } as StampCorrection));
-        }
+        },
+        staleTime: Infinity,
     });
 }
 
 export function useCorrectionsByEmployee(empId: string | undefined) {
+    const queryClient = useQueryClient();
+
+    useEffect(() => {
+        if (!empId) return;
+        const q = query(
+            collection(db, COLLECTIONS.STAMP_CORRECTIONS),
+            where('empId', '==', empId),
+            orderBy('createdAt', 'desc')
+        );
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const corrections = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            } as StampCorrection));
+            queryClient.setQueryData(['corrections', 'emp', empId], corrections);
+        });
+        return () => unsubscribe();
+    }, [empId, queryClient]);
+
     return useQuery({
         queryKey: ['corrections', 'emp', empId],
         queryFn: async () => {
@@ -38,6 +76,7 @@ export function useCorrectionsByEmployee(empId: string | undefined) {
             } as StampCorrection));
         },
         enabled: !!empId,
+        staleTime: Infinity,
     });
 }
 
