@@ -25,9 +25,16 @@ description: Firebase へのデプロイ手順（hosting + firestore rules）
 & "C:\Program Files\Git\cmd\git.exe" push
 ```
 
-4. Firebase Hosting と Firestore ルールをデプロイする:
+4. Firebase Hosting と Firestore ルールをデプロイする（Firebase 用にルートパスでビルドします）:
+```powershell
+$env:VITE_BASE_PATH="/"; npm run build; npx -y firebase-tools@latest deploy
 ```
-npx -y firebase-tools@latest deploy
+
+## GitHub Pages へのデプロイ
+GitHub Pages 用にビルドする場合は、環境変数を指定せずにビルドします：
+```powershell
+npm run build
+# その後、必要に応じて Git で push してください。
 ```
 
 ## 注意事項
