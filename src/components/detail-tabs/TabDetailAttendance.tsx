@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { db } from '../../firebase';
 import { collection, query, where, orderBy, getDocs, addDoc, serverTimestamp, deleteDoc, doc } from 'firebase/firestore';
 import { Employee, COLLECTIONS, AttendanceRecord, AttendanceType } from '../../types';
-import { toDate, formatTimeStr, formatDateStr, getMonthCycleRange } from '../../utils';
+import { toDate, formatTimeStr, formatDateStr, getMonthCycleRange, getCurrentCycleMonthStr } from '../../utils';
 import { useModal } from '../../contexts/ModalContext';
 import { Clock, Plus, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
@@ -13,7 +13,7 @@ interface Props {
 }
 
 export const TabDetailAttendance: React.FC<Props> = ({ employee }) => {
-    const [monthStr, setMonthStr] = useState(format(new Date(), 'yyyy-MM'));
+    const [monthStr, setMonthStr] = useState(getCurrentCycleMonthStr());
     const [records, setRecords] = useState<AttendanceRecord[]>([]);
     const [isLoading, setIsLoading] = useState(false);
 

@@ -89,7 +89,7 @@ export const AttendanceScreen: React.FC<Props> = ({ employee: propEmployee, onBa
                 empName: employee.name,
                 type,
                 remark,
-                timestamp: serverTimestamp(),
+                timestamp: new Date(),
                 createdAt: serverTimestamp()
             });
 

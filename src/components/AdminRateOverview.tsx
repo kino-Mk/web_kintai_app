@@ -4,13 +4,14 @@ import { collection, query, orderBy, getDocs, where } from 'firebase/firestore';
 import { Employee, COLLECTIONS } from '../types';
 import { Download, Users } from 'lucide-react';
 import { format } from 'date-fns';
+import { getCurrentCycleMonthStr } from '../utils';
 import { useModal } from '../contexts/ModalContext';
 import { Button } from './ui/Button';
 
 export const AdminRateOverview: React.FC = () => {
     // defaults
-    const [startMonth, setStartMonth] = useState(format(new Date(), 'yyyy-MM'));
-    const [endMonth, setEndMonth] = useState(format(new Date(), 'yyyy-MM'));
+    const [startMonth, setStartMonth] = useState(getCurrentCycleMonthStr());
+    const [endMonth, setEndMonth] = useState(getCurrentCycleMonthStr());
     const [includePaidLeave, setIncludePaidLeave] = useState(true);
     const [rates, setRates] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(false);

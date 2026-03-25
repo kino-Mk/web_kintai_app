@@ -143,6 +143,18 @@ export function getStartOfToday(): Date {
 }
 
 /**
+ * Get current billing cycle month string (YYYY-MM).
+ * Closing date is 20th, so if today > 20, cycle rolls over to next month.
+ */
+export function getCurrentCycleMonthStr(): string {
+    const today = new Date();
+    if (today.getDate() > 20) {
+        today.setMonth(today.getMonth() + 1);
+    }
+    return format(today, 'yyyy-MM');
+}
+
+/**
  * Get billing cycle range (21st to 20th)
  */
 export function getMonthCycleRange(monthStr: string) {

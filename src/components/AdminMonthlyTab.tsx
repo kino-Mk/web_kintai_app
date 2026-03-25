@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { toDate, getMonthCycleRange, calculateRemainingPaidLeave, formatDateStr, exportRawAttendanceCSV, downloadCSV, formatCsvTime } from '../utils';
+import { toDate, getMonthCycleRange, calculateRemainingPaidLeave, formatDateStr, exportRawAttendanceCSV, downloadCSV, formatCsvTime, getCurrentCycleMonthStr } from '../utils';
 import { User, ChevronRight, Download } from 'lucide-react';
 import { useModal } from '../contexts/ModalContext';
 import { useEmployees } from '../hooks/useEmployees';
@@ -10,7 +10,7 @@ import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
 import { AttendanceRecord, COLLECTIONS, Application } from '../types';
 
 export const AdminMonthlyTab: React.FC = () => {
-    const [selectedMonth, setSelectedMonth] = useState(formatDateStr(new Date()).substring(0, 7)); // YYYY-MM
+    const [selectedMonth, setSelectedMonth] = useState(getCurrentCycleMonthStr());
     const { showAlert } = useModal();
 
     const { data: employees = [], isLoading: loadEmp } = useEmployees();
