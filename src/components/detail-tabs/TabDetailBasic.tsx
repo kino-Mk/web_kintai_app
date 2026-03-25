@@ -3,8 +3,8 @@ import { db } from '../../firebase';
 import { doc, updateDoc, serverTimestamp, collection, query, where, getDocs, deleteDoc } from 'firebase/firestore';
 import { Employee, COLLECTIONS } from '../../types';
 import { useModal } from '../../contexts/ModalContext';
-import { hashPassword } from '../../utils';
-import { format, subMonths } from 'date-fns';
+import { hashPassword, getCurrentCycleMonthStr } from '../../utils';
+import { format, subMonths, parse } from 'date-fns';
 import { Button } from '../ui/Button';
 
 interface Props {
@@ -47,9 +47,11 @@ export const TabDetailBasic: React.FC<Props> = ({ employee }) => {
             setIsLoadingStats(true);
             try {
                 const targetMonths: string[] = [];
-                const now = new Date();
+                const currentCycleMonth = getCurrentCycleMonthStr(); // e.g. "2026-04"
+                const baseDate = parse(currentCycleMonth, 'yyyy-MM', new Date());
+
                 for (let i = 5; i >= 0; i--) {
-                    targetMonths.push(format(subMonths(now, i), 'yyyy-MM'));
+                    targetMonths.push(format(subMonths(baseDate, i), 'yyyy-MM'));
                 }
 
                 const cycles = targetMonths.map(mStr => {
