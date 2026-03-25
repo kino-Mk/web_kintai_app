@@ -4,7 +4,7 @@ import { db } from '../firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { Employee, COLLECTIONS, AttendanceType } from '../types';
 import { toDate, formatTimeStr, getStartOfToday } from '../utils';
-import { Clock, Play, Square, MessageSquare, ArrowLeft, LogOut, AlertOctagon } from 'lucide-react';
+import { Clock, Play, Square, MessageSquare, ArrowLeft, LogOut, AlertOctagon, CheckCircle } from 'lucide-react';
 import { useModal } from '../contexts/ModalContext';
 import { useAttendanceByEmployee } from '../hooks/useAttendance';
 import { useEmployee } from '../hooks/useEmployees';
@@ -23,6 +23,7 @@ export const AttendanceScreen: React.FC<Props> = ({ employee: propEmployee, onBa
     const [now, setNow] = useState(new Date());
     const [remark, setRemark] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isSuccess, setIsSuccess] = useState<'in' | 'out' | null>(null);
     const { showAlert, showConfirm } = useModal();
     const queryClient = useQueryClient();
 
@@ -78,7 +79,6 @@ export const AttendanceScreen: React.FC<Props> = ({ employee: propEmployee, onBa
             }
         }
 
-        const typeLabel = type === 'in' ? '出勤' : '退勤';
         const confirmMsg = type === 'in' ? '出勤しますか？' : '退勤しますか？';
         if (!(await showConfirm(confirmMsg))) return;
 
@@ -97,8 +97,16 @@ export const AttendanceScreen: React.FC<Props> = ({ employee: propEmployee, onBa
             await queryClient.invalidateQueries({ queryKey: ['attendance'] });
 
             setRemark('');
-            await showAlert(`${typeLabel} を打刻しました。`);
-            if (onComplete) onComplete();
+            
+            // 成功状態を表示
+            setIsSuccess(type);
+            
+            // 1.5秒後に自動的にリダイレクト
+            setTimeout(() => {
+                if (onComplete) onComplete();
+                setIsSuccess(null);
+            }, 1500);
+
         } catch (error: any) {
             console.error("Stamp error:", error);
             await showAlert('打刻に失敗しました。しばらくしてからお試しください。');
@@ -245,6 +253,27 @@ export const AttendanceScreen: React.FC<Props> = ({ employee: propEmployee, onBa
                     </div>
                 )}
             </div>
+
+            {/* Success Overlay */}
+            {isSuccess && (
+                <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-white/90 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className="text-center space-y-4 transform animate-in zoom-in-95 duration-300">
+                        <div className="relative">
+                            <div className="absolute inset-0 bg-success/20 rounded-full animate-ping"></div>
+                            <CheckCircle size={100} className="text-success relative z-10" />
+                        </div>
+                        <h2 className="text-4xl font-bold text-gray-800">打刻完了</h2>
+                        <p className="text-xl text-gray-500 font-bold">
+                            {isSuccess === 'in' ? '今日もお疲れ様です！' : 'お疲れ様でした！気をつけてお帰りください。'}
+                        </p>
+                        <div className="pt-8">
+                            <div className="w-48 h-1 bg-gray-100 mx-auto rounded-full overflow-hidden">
+                                <div className="h-full bg-primary animate-progress-fast"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
