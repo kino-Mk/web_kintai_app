@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../firebase';
-import { doc, updateDoc, serverTimestamp, collection, query, where, getDocs, deleteDoc } from 'firebase/firestore';
+import { doc, updateDoc, serverTimestamp, collection, query, where, getDocs, writeBatch } from 'firebase/firestore';
 import { Employee, COLLECTIONS } from '../../types';
 import { useModal } from '../../contexts/ModalContext';
 import { hashPassword, getCurrentCycleMonthStr } from '../../utils';
@@ -186,15 +186,39 @@ export const TabDetailBasic: React.FC<Props> = ({ employee }) => {
     };
 
     const handleDelete = async () => {
-        if (!(await showConfirm(`${employee.name} さんを本当に削除しますか？\n（物理削除されます）`))) return;
+        if (!(await showConfirm(`${employee.name} さんを本当に削除しますか？\nこの操作は取り消せません。関連するすべてのデータ（打刻履歴、申請など）も完全に削除されます。`))) return;
 
         try {
-            await deleteDoc(doc(db, COLLECTIONS.EMPLOYEES, employee.docId || employee.id));
-            await showAlert('削除しました。');
+            setIsSaving(true);
+            const batch = writeBatch(db);
+
+            // 1. 従業員のドキュメントを削除
+            batch.delete(doc(db, COLLECTIONS.EMPLOYEES, employee.docId || employee.id));
+
+            // 2. 関連するすべてのコレクションからデータを取得して削除
+            const relatedCollections = [
+                COLLECTIONS.ATTENDANCE,
+                COLLECTIONS.APPLICATIONS,
+                COLLECTIONS.STAMP_CORRECTIONS,
+                COLLECTIONS.LEAVE_GRANTS
+            ];
+
+            for (const colName of relatedCollections) {
+                const q = query(collection(db, colName), where('empId', '==', employee.id));
+                const snap = await getDocs(q);
+                snap.forEach(d => {
+                    batch.delete(d.ref);
+                });
+            }
+
+            await batch.commit();
+            await showAlert('従業員と関連データをすべて削除しました。');
             // employee is deleted, will cause unmount or redirect via parent snapshot
         } catch (error: any) {
             console.error('Employee delete error:', error);
-            await showAlert('削除に失敗しました。しばらくしてからお試しください。');
+            await showAlert('削除に失敗しました。一部のデータが残っている可能性があります。しばらくしてからお試しください。');
+        } finally {
+            setIsSaving(false);
         }
     };
 
