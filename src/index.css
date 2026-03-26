@@ -4,9 +4,6 @@
 
 @layer base {
   :root {
-    --primary: 210 100% 50%; /* #007bff */
-    --primary-foreground: 0 0% 100%;
-    
     --background: 210 20% 98%;
     --foreground: 222 47% 11%;
 
@@ -16,12 +13,6 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
 
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    
-    --ring: 222 84% 4.9%;
-
-    --radius: 1rem;
 
     /* 以前の変数との互換性・拡張 */
     --primary-color: #3498db;

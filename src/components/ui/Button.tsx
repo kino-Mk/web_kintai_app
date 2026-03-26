@@ -16,18 +16,18 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         const baseStyles = "inline-flex items-center justify-center rounded-xl font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none active:scale-95";
         
         const variants = {
-            primary: "bg-primary text-white hover:bg-primary-dark shadow-lg shadow-primary/30",
-            secondary: "bg-accent/10 text-accent hover:bg-accent/20",
-            danger: "bg-danger text-white hover:bg-red-600 shadow-lg shadow-danger/30",
-            ghost: "hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-700 dark:text-gray-200",
-            outline: "border-2 border-gray-200 dark:border-slate-700 bg-transparent hover:bg-gray-50 dark:hover:bg-slate-800 text-gray-700 dark:text-gray-200"
+            primary: "bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/20",
+            secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+            danger: "bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-lg shadow-destructive/20",
+            ghost: "hover:bg-accent hover:text-accent-foreground text-foreground",
+            outline: "border border-input bg-background hover:bg-accent hover:text-accent-foreground text-foreground"
         };
         
         const sizes = {
-            sm: "h-9 px-3 text-sm",
-            md: "h-11 px-6 text-base",
-            lg: "h-14 px-8 text-lg",
-            icon: "h-11 w-11"
+            sm: "h-9 px-3 text-sm rounded-md",
+            md: "h-11 px-6 text-base rounded-lg",
+            lg: "h-14 px-8 text-lg rounded-xl",
+            icon: "h-11 w-11 rounded-full"
         };
 
         return (
